@@ -4,7 +4,7 @@ note
 	revision: "$Revision$"
 
 class
-	FCGI
+	FCGI_C_API
 
 feature -- Connection
 

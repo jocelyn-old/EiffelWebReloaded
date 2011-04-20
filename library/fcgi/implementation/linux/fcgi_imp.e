@@ -3,6 +3,7 @@ deferred class FCGI_IMP
 inherit
 	FCGI_I
 	STRING_HANDLER
+	EXECUTION_ENVIRONMENT
 
 feature {NONE} -- Initialization
 
@@ -51,7 +52,7 @@ feature -- FCGI Connection
 
 	set_fcgi_exit_status (v: INTEGER)
 		do
-			{FCGI}.set_exit_status (-2)
+			{FCGI_C_API}.set_exit_status (-2)
 		end
 
 feature -- FCGI output
@@ -63,7 +64,7 @@ feature -- FCGI output
 		do
 			l_c_str := c_buffer
 			l_c_str.set_string (a_str)
-			{FCGI}.put_string (l_c_str.item, l_c_str.count)
+			{FCGI_C_API}.put_string (l_c_str.item, l_c_str.count)
 		end
 
 --	fcgi_printf (fmt: STRING; args: FINITE[ANY])
@@ -72,7 +73,7 @@ feature -- FCGI output
 --			l_c_str: C_STRING
 --		do
 --			create l_c_str.make (apf.aprintf (fmt, args))
---			{FCGI}.put_string (l_c_str.item, l_c_str.count)
+--			{FCGI_C_API}.put_string (l_c_str.item, l_c_str.count)
 --		end
 
 feature -- FCGI Input
@@ -84,7 +85,7 @@ feature -- FCGI Input
 		do
 			last_read_is_empty_ref.set_item (False)
 			l_c_str := c_buffer
-			last_read_count_ref.set_item ({FCGI}.read_content_into (l_c_str.item, n))
+			last_read_count_ref.set_item ({FCGI_C_API}.read_content_into (l_c_str.item, n))
 			if last_read_count <= 0 then
 				last_read_is_empty_ref.set_item (True)
 			end
@@ -104,7 +105,7 @@ feature -- FCGI Input
 			from
 			until done or writecount >= n
 			loop
-				num := {FCGI}.read_content_into (l_c_str.item, readsize)
+				num := {FCGI_C_API}.read_content_into (l_c_str.item, readsize)
 				--put_trace ("copy_from_stdin, num=" +num.out)
 				if num  = 0 then
 					-- EOF
@@ -127,7 +128,7 @@ feature -- I/O Routines
 --RFO			n: INTEGER
 --RFO		do
 --RFO			l_c_str := c_buffer
---RFO			n := {FCGI}.read_content_into (l_c_str.item, l_c_str.capacity)
+--RFO			n := {FCGI_C_API}.read_content_into (l_c_str.item, l_c_str.capacity)
 --RFO			a_str.set_count (n)
 --RFO			l_c_str.read_substring_into (a_str, 1, n)
 --RFO		end
@@ -140,7 +141,7 @@ feature -- I/O Routines
 --RFO			p: POINTER
 --RFO		do
 --RFO			create l_c_str.make_empty (1024)
---RFO			p := {FCGI}.gets (l_c_str.item)
+--RFO			p := {FCGI_C_API}.gets (l_c_str.item)
 --RFO--			if p /= default_pointer and p = l_c_str.item then
 --RFO				a_str.resize (l_c_str.count)
 --RFO				l_c_str.read_string_into (a_str)
