@@ -1,0 +1,2 @@
+
+set ISE_LIBRARY_WEB=%~dp0

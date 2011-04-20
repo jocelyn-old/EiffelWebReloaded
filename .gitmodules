@@ -1,0 +1,3 @@
+[submodule "3rd/fcgi-2.4.0"]
+	path = 3rd/fcgi-2.4.0
+	url = git@github.com:jocelyn/libfcgi.git
