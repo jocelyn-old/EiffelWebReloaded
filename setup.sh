@@ -1,3 +1,1 @@
-#!bin/sh
-
-ISE_LIBRARY_WEB=`pwd`
+export ISE_LIBRARY_WEB=`pwd`

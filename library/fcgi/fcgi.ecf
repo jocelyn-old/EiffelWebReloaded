@@ -10,7 +10,15 @@
 	
 		<option warning="true" full_class_checking="true" is_attached_by_default="true" void_safety="all" >
 		</option>
+		<external_include location="$(ISE_LIBRARY_WEB)/library/fcgi/spec/include/libfcgi">
+			<condition>
+				<platform excluded_value="windows"/>
+			</condition>
+		</external_include>
 		<external_include location="$(ISE_LIBRARY_WEB)\library\fcgi\spec\include\libfcgi">
+			<condition>
+				<platform value="windows"/>
+			</condition>
 		</external_include>
 		<external_library location="$(ISE_LIBRARY_WEB)\library\fcgi\spec\lib\$ISE_PLATFORM\msc\libfcgi.lib">
 			<condition>
