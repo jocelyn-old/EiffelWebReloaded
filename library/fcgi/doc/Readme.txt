@@ -30,7 +30,7 @@
 
 == IIS/Windows ==
 * When you install IIS on Windows 7, you just need to enable to CGI module which also include the FastCGI module
-* otherwise, have a look at http://www.iis.net/download/FastCGI
+* otherwise, have a look at http://www.iis.net/download/FastCGI and also http://learn.iis.net/page.aspx/375/set-up-fastcgi-for-php/
 * Then open the IIS Manager
   Modules: to check you really have FastCGIModule
   Handler Mappings and then "Add Module Mapping"

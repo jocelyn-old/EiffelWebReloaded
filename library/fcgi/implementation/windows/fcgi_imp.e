@@ -5,8 +5,6 @@ inherit
 
 	STRING_HANDLER
 
-	EXECUTION_ENVIRONMENT
-
 feature {NONE} -- Initialization
 
 	make
@@ -21,9 +19,37 @@ feature {NONE} -- Initialization
 feature -- Access
 
 	updated_environ_variables: HASH_TABLE [STRING, STRING]
+		local
+			i, n, l_size: INTEGER
+			p: POINTER
+			s: STRING
 		do
-			update_eif_environ
-			Result := starting_environment_variables
+			p := environ_strings_pointer ($n)
+			from
+				i := 1
+				l_size := 0
+				create Result.make (n)
+			until
+				i > n
+			loop
+				create s.make_from_c (p.plus (l_size))
+				l_size := l_size + s.count + 1
+				if attached separated_variables (s) as t then
+					Result.put (t.value, t.key)
+				end
+				i := i + 1
+			end
+
+--| Maybe not a great idea, since FCGI_finish should remove the environment variables passed by FCGI_Accept
+--				--| Update current environ variables.
+--			from
+--				Result.start
+--			until
+--				Result.after
+--			loop
+--				put (Result.item_for_iteration, Result.key_for_iteration)
+--				Result.forth
+--			end
 		end
 
 feature -- FCGI connection
@@ -202,5 +228,62 @@ feature {NONE} -- Shared buffer
 		ensure
 			c_buffer_not_void: Result /= Void
 		end
+
+feature {NONE} -- Implementation: environment
+
+	separated_variables (a_var: STRING): detachable TUPLE [value: STRING; key: STRING]
+			-- Given an environment variable `a_var' in form of "key=value",
+			-- return separated key and value.
+			-- Return Void if `a_var' is in incorrect format.
+		require
+			a_var_attached: a_var /= Void
+		local
+			i, j: INTEGER
+			done: BOOLEAN
+		do
+			j := a_var.count
+			from
+				i := 1
+			until
+				i > j or done
+			loop
+				if a_var.item (i) = '=' then
+					done := True
+				else
+					i := i + 1
+				end
+			end
+			if i > 1 and then i < j then
+				Result := [a_var.substring (i + 1, j), a_var.substring (1, i - 1)]
+			end
+		end
+
+	environ_strings_pointer (p_nb: TYPED_POINTER [INTEGER]): POINTER
+			-- Environment variable strings returned by `GetEnvironmentStringsA'
+			-- `p_nb' return the count of environment variables.
+		external
+			"C inline use <string.h>"
+		alias
+			"[
+				#ifdef EIF_WINDOWS
+					#ifndef GetEnvironmentStringsA 
+					 extern LPVOID WINAPI GetEnvironmentStringsA(void);
+					#endif	
+					
+					int cnt = 0;
+					LPSTR vars = GetEnvironmentStringsA();
+					char** p = (char**) vars;
+					
+					for (; *vars; vars++) {
+					   while (*vars) { vars++; }
+					   cnt++;
+					}
+					
+					*$p_nb = cnt;
+					return (EIF_POINTER) p;
+				#endif
+			]"
+		end
+
 
 end
