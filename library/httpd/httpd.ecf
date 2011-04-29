@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<system xmlns="http://www.eiffel.com/developers/xml/configuration-1-6-0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eiffel.com/developers/xml/configuration-1-6-0 http://www.eiffel.com/developers/xml/configuration-1-6-0.xsd" name="httpd" uuid="27859D46-4AA8-4833-BF4F-ED13EB57E807" library_target="httpd">
+	<target name="httpd">
+		<root all_classes="true"/>
+		<file_rule>
+			<exclude>/\.svn$</exclude>
+			<exclude>/\.git$</exclude>
+			<exclude>/EIFGENs$</exclude>
+		</file_rule>
+	
+		<option warning="true" full_class_checking="true" is_attached_by_default="true" void_safety="all" >
+		</option>
+
+		<library name="fcgi" location="..\fcgi\fcgi.ecf">
+			<condition>
+				<custom name="httpd_protocol" value="fcgi"/>
+			</condition>
+		</library>
+		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
+		<cluster name="interface" location="interface" recursive="true">
+		</cluster>
+		<cluster name="implementation" location="implementation" recursive="true">
+			<file_rule>
+				<exclude>/fake$</exclude>
+				<condition>
+					<custom name="httpd_protocol" value="fcgi"/>
+				</condition>
+			</file_rule>
+			<file_rule>
+				<exclude>/fcgi$</exclude>
+				<condition>
+					<custom name="httpd_protocol" excluded_value="fcgi"/>
+				</condition>
+			</file_rule>
+		</cluster>
+	</target>
+</system>
