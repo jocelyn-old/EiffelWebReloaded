@@ -17,6 +17,14 @@ feature -- Connection
 			"return FCGI_Accept();"
 		end
 
+	environ: POINTER
+			-- Get the (char**) environ variable from the DLL.
+		external
+			"C inline use %"fcgi_stdio.h%""
+		alias
+			"return (char**) environ;"
+		end
+
 	finish
 			-- Finished current request from HTTP server started from
 			-- the most recent call to `fcgi_accept'.
@@ -31,9 +39,7 @@ feature -- Connection
 		external
 			"C inline use %"fcgi_stdio.h%""
 		alias
-			"[
-				FCGI_SetExitStatus($v);
-			]"
+			"FCGI_SetExitStatus($v);"
 		end
 
 feature -- Input
@@ -56,7 +62,6 @@ feature -- Input
 			]"
 		end
 
-
 	gets (s: POINTER): POINTER
 			-- gets() reads a line from stdin into the buffer pointed to
 			-- by s until either a terminating newline or EOF, which it
@@ -65,9 +70,7 @@ feature -- Input
 		external
 			"C inline use %"fcgi_stdio.h%""
 		alias
-			"[
-				return FCGI_gets($s);
-			]"
+			"return FCGI_gets($s);"
 		end
 
 feature -- Output
@@ -76,9 +79,7 @@ feature -- Output
 		external
 			"C inline use %"fcgi_stdio.h%""
 		alias
-			"[
-				FCGI_fwrite($v, 1, $n, FCGI_stdout);
-			]"
+			"FCGI_fwrite($v, 1, $n, FCGI_stdout);"
 		end
 
 

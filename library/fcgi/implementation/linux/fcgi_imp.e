@@ -19,10 +19,9 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	updated_environ_variables: HASH_TABLE [STRING, STRING]
+	fcgi_environ: POINTER
 		do
-			update_eif_environ
-			Result := starting_environment_variables
+			Result := fcgi.environ
 		end
 
 feature -- FCGI Connection

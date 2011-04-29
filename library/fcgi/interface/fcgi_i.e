@@ -10,8 +10,26 @@ feature {NONE} -- Initialization
 feature -- Access
 
 	updated_environ_variables: HASH_TABLE [STRING, STRING]
-			-- Updated environ variables after `fcgi_listen' is returning.
-		deferred
+		local
+			i: INTEGER
+			p, v, null: POINTER
+		do
+			p := fcgi_environ
+			create Result.make (50)
+			if p /= null then
+				from
+					i := 0
+					v := fcgi_i_th_environ (i,p)
+				until
+					v = null
+				loop
+					if attached separated_variables (create {STRING}.make_from_c (v)) as t then
+						Result.force (t.value, t.key)
+					end
+					i := i + 1
+					v := fcgi_i_th_environ (i,p)
+				end
+			end
 		end
 
 feature -- FCGI interface
@@ -19,6 +37,11 @@ feature -- FCGI interface
 	fcgi_listen: INTEGER
 			-- Listen to the FCGI input stream
 			-- Return 0 for successful calls, -1 otherwise.
+		deferred
+		end
+
+	fcgi_environ: POINTER
+			-- Get the (char**) environ variable from the DLL.
 		deferred
 		end
 
@@ -105,5 +128,44 @@ feature {NONE} -- Constants
 		end
 
 	K_input_bufsize: INTEGER = 1024000
+
+feature {NONE} -- Implementation: Environment
+
+	fcgi_i_th_environ (i: INTEGER; p: POINTER): POINTER
+			-- Environment variable at `i'-th position of `p'.
+		require
+			i_valid: i >=0
+		external
+			"C inline use <string.h>"
+		alias
+			"return ((char **)$p)[$i];"
+		end
+
+	separated_variables (a_var: STRING): detachable TUPLE [value: STRING; key: STRING]
+			-- Given an environment variable `a_var' in form of "key=value",
+			-- return separated key and value.
+			-- Return Void if `a_var' is in incorrect format.
+		require
+			a_var_attached: a_var /= Void
+		local
+			i, j: INTEGER
+			done: BOOLEAN
+		do
+			j := a_var.count
+			from
+				i := 1
+			until
+				i > j or done
+			loop
+				if a_var.item (i) = '=' then
+					done := True
+				else
+					i := i + 1
+				end
+			end
+			if i > 1 and then i < j then
+				Result := [a_var.substring (i + 1, j), a_var.substring (1, i - 1)]
+			end
+		end
 
 end

@@ -17,6 +17,14 @@ feature -- Connections
 			"FCGI_Accept"
 		end
 
+	environ: POINTER
+			-- Get the (char**) environ variable from the DLL.
+		external
+			"dll libfcgi.dll signature (): EIF_POINTER use fcgi_stdio.h "
+		alias
+			"FCGI_Environ"
+		end
+
 	finish
 			-- Finished current request from HTTP server started from
 			-- the most recent call to `accept'.

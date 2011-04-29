@@ -3,6 +3,16 @@ class FCGI_IMP
 inherit
 	FCGI_I
 
+feature -- Access
+
+	environ: POINTER
+			-- Get the (char**) environ variable from the DLL.
+		external
+			"C inline use %"fcgi_stdio.h%""
+		alias
+			"return (char**) environ;"
+		end
+
 feature -- FCGI connection
 
 	fcgi_listen: INTEGER
