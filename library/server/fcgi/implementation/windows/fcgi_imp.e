@@ -132,11 +132,13 @@ feature -- FCGI input
 			-- Read up to n bytes from stdin and store in c_buffer
 		local
 			l_c_str: C_STRING
+			l_count: INTEGER
 		do
 			last_read_is_empty_ref.set_item (False)
 			l_c_str := c_buffer
-			last_read_count_ref.set_item (fcgi.read_content_into (l_c_str.item, n))
-			if last_read_count <= 0 then
+			l_count := fcgi.read_content_into (l_c_str.item, n)
+			last_read_count_ref.set_item (l_count)
+			if l_count <= 0 then
 				last_read_is_empty_ref.set_item (True)
 			end
 		end
@@ -225,10 +227,13 @@ feature -- I/O Routines
 feature -- Status
 
 	buffer_contents: STRING
+		local
+			n: like last_read_count
 		do
-			create Result.make (last_read_count)
-			Result.set_count (last_read_count)
-			c_buffer.read_substring_into (Result, 1, last_read_count)
+			n := last_read_count
+			create Result.make (n)
+			Result.set_count (n)
+			c_buffer.read_substring_into (Result, 1, n)
 		end
 
 	buffer_capacity: INTEGER
@@ -283,7 +288,7 @@ feature {NONE} -- Implementation: environment
 --		alias
 --			"[
 --				#ifdef EIF_WINDOWS
---					#ifndef GetEnvironmentStringsA 
+--					#ifndef GetEnvironmentStringsA
 --					 extern LPVOID WINAPI GetEnvironmentStringsA(void);
 --					#endif	
 --					

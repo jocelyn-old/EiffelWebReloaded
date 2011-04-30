@@ -68,7 +68,7 @@ feature -- Input
 		do
 			l_stdin := stdin
 			i := feof (l_stdin)
-			if i = 0 then
+			if i /= 0 then
 				Result := 0
 			else
 				Result := fread(a_buffer, 1, a_length, l_stdin)
@@ -120,6 +120,5 @@ feature -- Access
 		alias
 			"FCGI_stdin"
 		end
-
 
 end

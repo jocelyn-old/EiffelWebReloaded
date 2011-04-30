@@ -11,6 +11,7 @@
 		<setting name="concurrency" value="thread"/>
 		<variable name="httpd_protocol" value="fcgi"/>
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
+		<library name="error" location="..\..\..\error\error.ecf" readonly="false"/>
 		<library name="fcgi" location="..\..\fcgi\fcgi.ecf" readonly="false"/>
 		<library name="httpd" location="..\httpd.ecf" readonly="false"/>
 		<cluster name="application" location=".\" recursive="true"/>
