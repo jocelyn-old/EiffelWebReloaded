@@ -15,6 +15,7 @@ feature {NONE} -- Initialization
 	initialize
 		do
 			create fcgi.make
+			create {HTTPD_FCGI_SERVER_INPUT} input.make (fcgi)
 		end
 
 feature -- Access
@@ -33,16 +34,21 @@ feature -- Basic operation
 				res < 0
 			loop
 				request_count := request_count + 1
-				execute (fcgi.updated_environ_variables)
+				call_execute (fcgi.updated_environ_variables)
 				res := fcgi.fcgi_listen
 			end
 		end
 
 feature -- Execution
 
-	execute (a_variables: HASH_TABLE [STRING, STRING])
+	execute (henv: HTTPD_ENVIRONMENT)
 		deferred
 		end
+
+feature -- Input
+
+	input: HTTPD_SERVER_INPUT
+			-- Input from httpd server
 
 feature -- Output
 

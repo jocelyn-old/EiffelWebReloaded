@@ -14,6 +14,7 @@
 		<library name="error" location="..\..\..\error\error.ecf" readonly="false"/>
 		<library name="fcgi" location="..\..\fcgi\fcgi.ecf" readonly="false"/>
 		<library name="httpd" location="..\httpd.ecf" readonly="false"/>
+		<library name="logger" location="..\..\..\logger\logger.ecf" readonly="false"/>
 		<cluster name="application" location=".\" recursive="true"/>
 	</target>
 </system>

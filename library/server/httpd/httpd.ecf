@@ -11,11 +11,13 @@
 		</option>
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
 		<library name="error" location="..\..\error\error.ecf" readonly="false"/>
+		<library name="logger" location="..\..\logger\logger.ecf" readonly="false"/>
 		<library name="fcgi" location="..\fcgi\fcgi.ecf">
 			<condition>
 				<custom name="httpd_protocol" value="fcgi"/>
 			</condition>
 		</library>
+		<library name="time" location="$ISE_LIBRARY\library\time\time-safe.ecf"/>
 		<cluster name="implementation" location="implementation\" recursive="true">
 			<file_rule>
 				<exclude>/fake$</exclude>
