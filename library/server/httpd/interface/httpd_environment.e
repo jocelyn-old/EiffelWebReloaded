@@ -11,14 +11,17 @@ create
 
 feature {NONE} -- Initialization
 
-	make (a_vars: like execution_variables; a_input: HTTPD_SERVER_INPUT)
+	make (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT)
 			-- Initialize Current with variable `a_vars' and `a_input'
 		do
 			input := a_input
 			create request_uri.make_empty
 			create request_method.make_empty
+			create path_info.make_empty
+
 			content_type := default_content_type
-			execution_variables := a_vars
+			create execution_variables.make_with_variables (a_vars)
+			create uploaded_files.make (0)
 			create error_handler.make
 			analyze
 		end
@@ -27,8 +30,11 @@ feature -- Recycle
 
 	recycle
 			-- Clean structure
+		local
+			l_files: like uploaded_files
 		do
-			if attached uploaded_files as l_files then
+			l_files := uploaded_files
+			if not l_files.is_empty then
 				from
 					l_files.start
 				until
@@ -56,6 +62,10 @@ feature -- Basic operation
 			end
 		end
 
+	validate_http_cookie
+		do
+		end
+
 feature -- Error handling
 
 	has_error: BOOLEAN
@@ -77,7 +87,55 @@ feature -- Element change: Error handling
 
 feature -- Access: variable
 
-	execution_variables: HASH_TABLE [STRING, STRING]
+	all_variables: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
+		local
+			vars: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
+		do
+			create Result.make (100)
+			vars := execution_variables
+			from
+				vars.start
+			until
+				vars.after
+			loop
+				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				vars.forth
+			end
+
+			vars := variables_get
+			from
+				vars.start
+			until
+				vars.after
+			loop
+				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				vars.forth
+			end
+
+			vars := variables_post
+			from
+				vars.start
+			until
+				vars.after
+			loop
+				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				vars.forth
+			end
+
+			vars := cookies
+			from
+				vars.start
+			until
+				vars.after
+			loop
+				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				vars.forth
+			end
+
+
+		end
+
+	execution_variables: HTTPD_EXECUTION_VARIABLES
 			-- Execution environment
 
 	execution_variable (a_name: STRING): detachable STRING
@@ -91,6 +149,7 @@ feature -- Access: variable
 feature -- Access
 
 	request_uri: STRING
+			-- URI given in order to access this page; for instance, '/index.html'.
 
 	request_method: STRING
 			-- request method used to access the page
@@ -99,18 +158,19 @@ feature -- Access
 	query_string: detachable STRING
 			-- query string, if any, via which the page was accessed.
 
-	path_info: detachable STRING
+	path_info: STRING
 			-- Contains any client-provided pathname information
 			-- trailing the actual script filename but preceding the query string, if available.
 			--| For instance, if the current script was accessed via the URL
 			--| http://www.example.com/eiffel/path_info.exe/some/stuff?foo=bar, then $_SERVER['PATH_INFO'] would contain /some/stuff.
+			--|
+			--| Note that is the PATH_INFO variable does not exists, the `path_info' value will be empty
 
 	orig_path_info: detachable STRING
     		-- Original version of `path_info' before processed by Current environment
-
-	path_translated: detachable STRING
-			-- Filesystem- (not document root-) based path to the current script,
-			-- after the server has done any virtual-to-real mapping.
+    	do
+    		Result := execution_variables.orig_path_info
+    	end
 
 	content_length: INTEGER
 	content_type: STRING
@@ -124,92 +184,34 @@ feature -- Access
 	http_host: detachable STRING
 			-- Contents of the Host: header from the current request, if there is one.
 
+feature -- Authorization
+
 	http_authorization: detachable STRING
+			-- Base64-encoded authorization info
 
-	http_cookie: detachable STRING
-			-- Raw value of the 'Cookie' header sent by the user agent.
-
-feature -- Not request-specific environment variables
-
-	gateway_interface: detachable STRING
-			-- Revision of the CGI specification to which this server complies.
+	http_authorization_login_password: detachable TUPLE [login: STRING; password: STRING]
+			-- Login/password extracted from http_authorization
+		local
+			p: INTEGER
+			s: detachable STRING
 		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.gateway_interface)
-		end
-
-	server_name: detachable STRING
-			-- Server's hostname, DNS alias, or IP address.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.server_name)
-		end
-
-	server_software: detachable STRING
-			-- Name and version of information server answering the request.
-		once
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.server_software)
-		end
-
-feature -- Request specific environment variables
-
-	auth_type: detachable STRING
-			-- Protocol-specific authentication method used to validate user.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.auth_type)
-		end
-
-	remote_host: detachable STRING
-			-- Hostname making the request.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.remote_host)
-		end
-
-	remote_addr: detachable STRING
-			-- IP address of the remote host making the request.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.remote_addr)
-		end
-
-	remote_ident: detachable STRING
-			-- User name retrieved from server if RFC 931 supported.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.remote_ident)
-		end
-
-	remote_user: detachable STRING
-			-- Username, if applicable.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.remote_user)
-		end
-
-	script_name: detachable STRING
-			-- Virtual path to the script being executed.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.script_name)
-		end
-
-	server_port: detachable STRING
-			-- Port number to which request was sent.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.server_port)
-		end
-
-	server_protocol: detachable STRING
-			-- Name and revision of information protocol of this request.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.server_protocol)
-		end
-
-feature -- Headerline based environment variables
-
-	http_accept: detachable STRING
-			-- MIME types which the client will accept.
-		do
-			Result := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_accept)
+			s := http_authorization
+			if s /= Void then
+				p := s.index_of (' ', 1)
+				if p > 0 then
+					s := (create {HTTP_BASE64}).decoded_string (s.substring (p + 1, s.count))
+					p := s.index_of (':', 1) --| Let's assume ':' is forbidden in login ...
+					if p > 0 then
+						Result := [s.substring (1, p - 1), s.substring (p + 1, s.count)]
+					end
+				end
+			end
 		end
 
 feature -- Queries
 
-	variables_GET: like explode_to_variables
+	variables_GET: HTTPD_ENVIRONMENT_VARIABLES
+			-- Variables from url
 		local
 			vars: like internal_variables_GET
 			p,e: INTEGER
@@ -223,7 +225,6 @@ feature -- Queries
 					rq_uri := request_uri
 					p := rq_uri.index_of ('?', 1)
 					if p > 0 then
-						create vars.make (3)
 						e := rq_uri.index_of ('#', p + 1)
 						if e = 0 then
 							e := rq_uri.count
@@ -234,7 +235,7 @@ feature -- Queries
 					end
 				end
 				if s /= Void and then not s.is_empty then
-					vars := explode_to_variables (s, True)
+					create vars.make_from_urlencoded (s, True)
 				else
 					create vars.make (0)
 				end
@@ -243,7 +244,8 @@ feature -- Queries
 			Result := vars
 		end
 
-	variables_POST: like explode_to_variables
+	variables_POST: HTTPD_ENVIRONMENT_VARIABLES
+			-- Variables sent by POST request
 		local
 			vars: like internal_variables_POST
 			s: STRING
@@ -258,14 +260,14 @@ feature -- Queries
 					if
 						l_type.starts_with ({HTTP_CONSTANTS}.multipart_form)
 					then
-						create vars.make (1)
+						create vars.make (5)
 						--| FIXME: optimization ... fetch the input data progressively, otherwise we might run out of memory ...
 						s := form_input_data (n)
 
 						analyze_multipart_form (l_type, s, vars)
 					else
 						s := form_input_data (n)
-						vars := explode_to_variables (s, True)
+						create vars.make_from_urlencoded (s, True)
 					end
 --					vars.force ("<pre>"+s+"</pre>", "_")
 				else
@@ -276,40 +278,51 @@ feature -- Queries
 			Result := vars
 		end
 
-	uploaded_files: detachable HASH_TABLE [TUPLE [name: STRING; type: STRING; tmp_name: STRING; error: INTEGER; size: INTEGER], STRING]
+	uploaded_files: HASH_TABLE [TUPLE [name: STRING; type: STRING; tmp_name: STRING; tmp_basename: STRING; error: INTEGER; size: INTEGER], STRING]
+			-- Table of uploaded files information
+			--| name: original path from the user
+			--| type: content type
+			--| tmp_name: path to temp file that resides on server
+			--| tmp_base_name: basename of `tmp_name'
+			--| error: if /= 0 , there was an error : TODO ...
+			--| size: size of the file given by the http request
 
 	cookies: HASH_TABLE [STRING, STRING]
-			-- Cookie Information relative to data.
+			-- Cookies Information
 		local
 			i,j,p,n: INTEGER
-			s: STRING
+			l_cookies: like internal_cookies
 		do
-			if attached http_cookie as l_cookies then
-				create Result.make (10)
-				s := l_cookies
-				from
-					n := s.count
-					p := 1
-					i := 1
-				until
-					p < 1
-				loop
-					i := s.index_of ('=', p)
-					if i > 0 then
-						j := s.index_of (';', i)
-						if j = 0 then
-							j := n + 1
-							Result.put (s.substring (i + 1, n), s.substring (p, i - 1))
-							p := 0 -- force termination
-						else
-							Result.put (s.substring (i + 1, j - 1), s.substring (p, i - 1))
-							p := j + 1
+			l_cookies := internal_cookies
+			if l_cookies = Void then
+				if attached execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_cookie) as s then
+					create l_cookies.make (5)
+					from
+						n := s.count
+						p := 1
+						i := 1
+					until
+						p < 1
+					loop
+						i := s.index_of ('=', p)
+						if i > 0 then
+							j := s.index_of (';', i)
+							if j = 0 then
+								j := n + 1
+								l_cookies.put (s.substring (i + 1, n), s.substring (p, i - 1))
+								p := 0 -- force termination
+							else
+								l_cookies.put (s.substring (i + 1, j - 1), s.substring (p, i - 1))
+								p := j + 1
+							end
 						end
 					end
+				else
+					create l_cookies.make (0)
 				end
-			else
-				create Result.make (0)
+				internal_cookies := l_cookies
 			end
+			Result := l_cookies
 		end
 
 feature -- Uploaded File Handling
@@ -334,8 +347,11 @@ feature -- Uploaded File Handling
 
 	is_uploaded_file (a_filename: STRING): BOOLEAN
 			-- Is `a_filename' a file uploaded via HTTP POST
+		local
+			l_files: like uploaded_files
 		do
-			if attached uploaded_files as l_files then
+			l_files := uploaded_files
+			if not l_files.is_empty then
 				from
 					l_files.start
 				until
@@ -370,9 +386,11 @@ feature {NONE} -- Temporary File handling
 			end
 		end
 
-	save_uploaded_file (a_content: STRING; a_filename: STRING): detachable STRING
+	save_uploaded_file (a_content: STRING; a_filename: STRING): detachable TUPLE [name: STRING; basename: STRING]
 			-- Save uploaded file content to `a_filename'
 		local
+			bn: STRING
+			l_safe_name: STRING
 			f: RAW_FILE
 			dn: STRING
 			fn: FILE_NAME
@@ -384,9 +402,11 @@ feature {NONE} -- Temporary File handling
 				dn := (create {EXECUTION_ENVIRONMENT}).current_working_directory
 				create d.make (dn)
 				if d.exists and then d.is_writable then
+					l_safe_name := safe_filename (a_filename)
 					from
 						create fn.make_from_string (dn)
-						fn.set_file_name ("tmp-" + a_filename)
+						bn := "tmp-" + l_safe_name
+						fn.set_file_name (bn)
 						create f.make (fn.string)
 						n := 0
 					until
@@ -395,7 +415,8 @@ feature {NONE} -- Temporary File handling
 					loop
 						n := n + 1
 						fn.make_from_string (dn)
-						fn.set_file_name ("tmp-" + n.out + "-" + a_filename)
+						bn := "tmp-" + n.out + "-" + l_safe_name
+						fn.set_file_name (bn)
 						f.make (fn.string)
 					end
 
@@ -403,7 +424,7 @@ feature {NONE} -- Temporary File handling
 						f.open_write
 						f.put_string (a_content)
 						f.close
-						Result := f.name
+						Result := [f.name, bn]
 					else
 						Result := Void
 					end
@@ -416,6 +437,41 @@ feature {NONE} -- Temporary File handling
 		rescue
 			rescued := True
 			retry
+		end
+
+	safe_filename (fn: STRING): STRING
+		local
+			c: CHARACTER
+			i, n, p: INTEGER
+			l_accentued, l_non_accentued: STRING
+		do
+			l_accentued := "ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ"
+			l_non_accentued := "AAAAAACEEEEIIIIOOOOOUUUUYaaaaaaceeeeiiiioooooouuuuyy"
+
+				--| Compute safe filename, to avoid creating impossible filename, or dangerous one
+			from
+				i := 1
+				n := fn.count
+				create Result.make (n)
+			until
+				i > n
+			loop
+				c := fn[i]
+				inspect c
+				when '.', '-', '_' then
+					Result.extend (c)
+				when 'A' .. 'Z', 'a' .. 'z', '0' .. '9' then
+					Result.extend (c)
+				else
+					p := l_accentued.index_of (c, 1)
+					if p > 0 then
+						Result.extend (l_non_accentued[p])
+					else
+						Result.extend ('-')
+					end
+				end
+				i := i + 1
+			end
 		end
 
 feature {NONE} -- Implementation: Form analyzer
@@ -470,7 +526,6 @@ feature {NONE} -- Implementation: Form analyzer
 		require
 			s_not_empty: s /= Void and then not s.is_empty
 		local
-			l_files: like uploaded_files
 			n, i,p, b,e: INTEGER
 			l_name, l_filename, l_content_type: detachable STRING
 			l_header: detachable STRING
@@ -522,7 +577,7 @@ feature {NONE} -- Implementation: Form analyzer
 							p := l_line.substring_index ("name=", 1)
 							if p > 0 then
 								p := p + 4 --| 4 = ("name=").count - 1
-								if l_line[p+1] = '%"' then
+								if l_line.valid_index (p+1) and then l_line[p+1] = '%"' then
 									p := p + 1
 									e := l_line.index_of ('"', p + 1)
 								else
@@ -537,7 +592,7 @@ feature {NONE} -- Implementation: Form analyzer
 							p := l_line.substring_index ("filename=", 1)
 							if p > 0 then
 								p := p + 8 --| 8 = ("filename=").count - 1
-								if l_line[p+1] = '%"' then
+								if l_line.valid_index (p+1) and then l_line[p+1] = '%"' then
 									p := p + 1
 									e := l_line.index_of ('"', p + 1)
 								else
@@ -560,16 +615,10 @@ feature {NONE} -- Implementation: Form analyzer
 						if l_content_type = Void then
 							l_content_type := default_content_type
 						end
-						l_files := uploaded_files
-						if l_files = Void then
-							create l_files.make (1)
-							uploaded_files := l_files
-						end
-						if attached save_uploaded_file (l_content, l_filename) as l_saved_fn then
-							vars_post.force (l_saved_fn, "_TMP_FILENAME_" + vars_post.count.out)
-							l_files.force ([l_filename, l_content_type, l_saved_fn, 0, l_content.count], l_name)
+						if attached save_uploaded_file (l_content, l_filename) as l_saved_fn_info then
+							uploaded_files.force ([l_filename, l_content_type, l_saved_fn_info.name, l_saved_fn_info.basename, 0, l_content.count], l_name)
 						else
-							l_files.force ([l_filename, l_content_type, "", -1, l_content.count], l_name)
+							uploaded_files.force ([l_filename, l_content_type, "", "", -1, l_content.count], l_name)
 						end
 					else
 						vars_post.force (l_content, l_name)
@@ -581,7 +630,6 @@ feature {NONE} -- Implementation: Form analyzer
 				error_handler.add_custom_error (0, "missformed multipart entry", Void)
 			end
 		end
-
 
 feature {NONE} -- Internal value
 
@@ -610,8 +658,11 @@ feature {NONE} -- Internal value
 	internal_variables_GET: detachable like variables_GET
 			-- cached value for `variables_GET'
 
-	internal_variables_POST: detachable like variables_post
+	internal_variables_POST: detachable like variables_POST
 			-- cached value for `variables_POST'
+
+	internal_cookies: detachable like cookies
+			-- cached value for `cookies'
 
 feature -- I/O
 
@@ -654,27 +705,27 @@ feature -- Element change
 		end
 
 	set_path_info (s: detachable STRING)
+		local
+			l_path_info: STRING
 		do
-			path_info := s
 			--| Warning
 			--| on IIS: we might have   PATH_INFO = /sample.exe/foo/bar
 			--| on apache:				PATH_INFO = /foo/bar
 			--| So, we might need to check with SCRIPT_NAME and remove it on IIS
 			--| store original PATH_INFO in ORIG_PATH_INFO
-		end
-
-	set_path_translated (s: detachable STRING)
-		do
-			path_translated := s
-			-- analyze_path_translated
-		end
-
-feature {NONE} -- Implementation: Validation
-
-	validate_http_cookie
-		do
-			if attached http_cookie as l_cookie and then not l_cookie.is_empty then
-
+			if s /= Void then
+				path_info := s
+				execution_variables.replace_variable (s, "ORIG_PATH_INFO")
+				if attached execution_variables.script_name as l_script_name then
+					if s.starts_with (l_script_name) then
+						l_path_info := s.substring (l_script_name.count + 1 , s.count)
+						execution_variables.replace_variable (l_path_info, "PATH_INFO")
+						path_info := l_path_info
+					end
+				end
+			else
+				path_info := ""
+				execution_variables.delete_variable ("ORIG_PATH_INFO")
 			end
 		end
 
@@ -692,59 +743,19 @@ feature {NONE} -- Implementation
 			error_handler.add_error (e)
 		end
 
-	explode_to_variables (a_content: STRING; decoding: BOOLEAN): HASH_TABLE [STRING_32, STRING_32]
-		local
-			n, p, i, j: INTEGER
-			s: STRING
-			l_name,l_value: STRING_32
-		do
-			n := a_content.count
-			if n > 0 then
-				create Result.make (10)
-				from
-					p := 1
-				until
-					p = 0
-				loop
-					i := a_content.index_of ('&', p)
-					if i = 0 then
-						s := a_content.substring (p, n)
-						p := 0
-					else
-						s := a_content.substring (p, i - 1)
-						p := i + 1
-					end
-					if not s.is_empty then
-						j := s.index_of ('=', 1)
-						if j > 0 then
-							l_name := s.substring (1, j - 1)
-							l_value := s.substring (j + 1, s.count)
-							if decoding then
-								l_name := string_routines.string_url_decoded (l_name)
-								l_value := string_routines.string_url_decoded (l_value)
-							end
-							Result.force (l_value, l_name)
-						end
-					end
-				end
-			else
-				create Result.make (0)
-			end
-		end
-
 	extract_variables
 			-- Extract relevant environment variables
 		local
 			s: detachable STRING
 		do
-			s := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.request_uri)
+			s := execution_variables.request_uri
 			if s /= Void and then not s.is_empty then
 				request_uri := s
 			else
 				report_bad_request_error ("Missing URI")
 			end
 			if not has_error then
-				s := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.request_method)
+				s := execution_variables.request_method
 				if s /= Void and then not s.is_empty then
 					request_method := s
 				else
@@ -752,20 +763,20 @@ feature {NONE} -- Implementation
 				end
 			end
 			if not has_error then
-				http_user_agent := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_user_agent)
-				http_authorization := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_authorization)
+				http_user_agent := execution_variables.http_user_agent
+				http_authorization := execution_variables.http_authorization
 --				analyze_authorization
 			end
 			if not has_error then
-				if attached execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_host) as l_host and then not l_host.is_empty then
+				if attached execution_variables.http_host as l_host and then not l_host.is_empty then
 					set_http_host (l_host)
 				else
 					report_bad_request_error ("Missing host header")
 				end
 			end
 			if not has_error then
-				set_query_string (execution_variable ({HTTPD_ENVIRONMENT_NAMES}.query_string))
-				s := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.content_type)
+				set_query_string (execution_variables.query_string)
+				s := execution_variables.content_type
 				if s /= Void and then not s.is_empty then
 					set_content_type (s)
 				end
@@ -774,8 +785,6 @@ feature {NONE} -- Implementation
 					set_content_length (s.to_integer)
 				end
 				set_path_info (execution_variable ({HTTPD_ENVIRONMENT_NAMES}.path_info))
-				set_path_translated (execution_variable ({HTTPD_ENVIRONMENT_NAMES}.path_translated))
-				http_cookie := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_cookie)
 			end
 		end
 
@@ -783,5 +792,12 @@ feature {NONE} -- Implementation
 		once
 			create Result
 		end
+
+invariant
+
+	request_uri_attached: request_uri /= Void
+	request_method_attached: request_method /= Void
+	path_info_attached: path_info /= Void
+	content_type_attached: content_type /= Void
 
 end

@@ -57,4 +57,8 @@ feature -- Access
 
 	server_software: STRING = "SERVER_SOFTWARE"
 
+feature -- Extra names
+
+	orig_path_info: STRING = "ORIG_PATH_INFO"
+
 end
