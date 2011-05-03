@@ -24,7 +24,7 @@ feature {NONE} -- Initialization
 	make
 			-- Initialize `Current'.
 		do
-			logger_cell.replace (create {FILE_LOGGER}.make_with_filename ("c:\temp\sample.log"))
+			logger_cell.replace (create {FILE_LOGGER}.make_with_filename ("sample.log"))
 			initialize
 			launch
 			logger.close
@@ -32,12 +32,209 @@ feature {NONE} -- Initialization
 
 feature -- Execution
 
+	html_menu (henv: HTTPD_ENVIRONMENT): STRING
+		local
+			s: detachable STRING
+		do
+			s := henv.execution_variables.script_name
+			if s = Void then
+				s := ""
+			end
+			Result := "<div> "
+					+ "<a href=%"" + s + "/home%">Home</a> "
+					+ "<a href=%"" + s + "/help%">Help</a> "
+					+ "<a href=%"" + s + "/env%">Env</a> "
+					+ "<a href=%"" + s + "/quit%">Quit</a> "
+					+ "</div>"
+		end
+
 	execute (henv: HTTPD_ENVIRONMENT)
 		local
 			rqst_uri: detachable STRING
+			l_path_info: detachable STRING
 		do
 			logger.log (1, "execute: " + request_count.out)
+--			if attached henv.all_variables as vars then
+--				from
+--					vars.start
+--				until
+--					vars.after
+--				loop
+--					logger.log (1, "%T" + vars.key_for_iteration.as_string_8 + "=" + vars.item_for_iteration.as_string_8)
+--					vars.forth
+--				end
+--			end
+			l_path_info := henv.path_info
+			if l_path_info.is_empty then
+				l_path_info := "/home" --| Default application
+			end
+			if l_path_info.starts_with ("/help") then
+				execute_help_application (henv)
+			elseif l_path_info.starts_with ("/home") then
+				execute_home_application (henv)
+			elseif l_path_info.starts_with ("/env") then
+				execute_default_application (henv)
+			elseif l_path_info.starts_with ("/file") or l_path_info.starts_with ("/download") then
+				execute_file_application (henv)
+			elseif l_path_info.starts_with ("/quit") then
+				execute_exit_application (henv)
+			else
+				execute_default_application (henv)
+			end
+		end
+
+	execute_home_application (henv: HTTPD_ENVIRONMENT)
+		do
+			http_put_string (header ("FCGI Eiffel Application - Home"))
+			http_put_string (html_menu (henv))
+			http_put_string ("<h1> Welcome to the Eiffel Web Application (request count="+request_count.out+")</h1>")
+			http_put_string ("PATH_INFO=" + henv.path_info + "<br/>")
+			http_put_string (footer)
+		end
+
+	execute_file_application (henv: HTTPD_ENVIRONMENT)
+		local
+			l_path_info: STRING
+			p: INTEGER
+			l_file: STRING
+		do
+			l_path_info := henv.path_info
+			p := l_path_info.substring_index ("download/", 1)
+			if p > 0 then
+				l_file := l_path_info.substring (p + 9, l_path_info.count)
+				http_put_header_line ("Content-Type: application/force-download; name=%""+ basename (l_file) +"%"")
+				http_put_header_line ("Content-Type: image/png; name=%""+ basename (l_file) +"%"")
+				http_put_header_line ("Content-Transfer-Encoding: binary")
+				http_put_header_line ("Content-Length: " + filesize (l_file).out)
+				http_put_header_line ("Content-Disposition: attachment; filename=%""+ basename (l_file) +"%"")
+				http_put_header_line ("Expires: 0")
+				http_put_header_line ("Cache-Control: no-cache, must-revalidate")
+				http_put_header_line ("Pragma: no-cache")
+				http_put_header_line ("")
+
+				http_put_file_content (l_file);
+			else
+				p := l_path_info.substring_index ("file/", 1)
+				if p > 0 then
+					l_file := l_path_info.substring (p + 5, l_path_info.count)
+					http_put_header_line ("Content-Type: " + content_type_by_extension (file_extension (l_file)) + "; name=%""+ basename (l_file) +"%"")
+					http_put_header_line ("Content-Transfer-Encoding: binary")
+					http_put_header_line ("Content-Length: " + filesize (l_file).out)
+					http_put_header_line ("Content-Disposition: attachment; filename=%""+ basename (l_file) +"%"")
+					http_put_header_line ("Expires: 0")
+					http_put_header_line ("Cache-Control: no-cache, must-revalidate")
+					http_put_header_line ("Pragma: no-cache")
+					http_put_header_line ("")
+
+					http_put_file_content (l_file);
+				else
+					http_put_string (header ("FCGI Eiffel Application - File"))
+					http_put_string (footer)
+				end
+			end
+		end
+
+	filesize (fn: STRING): INTEGER
+		local
+			f: RAW_FILE
+		do
+			create f.make (fn)
+			if f.exists then
+				Result := f.count
+			end
+		end
+
+	content_type_by_extension (ext: STRING): STRING
+		local
+			e: STRING
+		do
+			e := ext.as_lower
+			if e.same_string ("pdf") then
+      			Result := "application/pdf"
+      		elseif e.same_string ("exe") then
+      			Result := "application/octet-stream"
+      		elseif e.same_string ("exe") then
+				Result := "application/octet-stream"
+      		elseif e.same_string ("zip") then
+				Result := "application/zip"
+      		elseif e.same_string ("doc") then
+				Result := "application/msword"
+      		elseif e.same_string ("xls") then
+				Result := "application/vnd.ms-excel"
+      		elseif e.same_string ("ppt") then
+				Result := "application/vnd.ms-powerpoint"
+      		elseif e.same_string ("gif") then
+				Result := "image/gif"
+      		elseif e.same_string ("png") then
+				Result := "image/png"
+      		elseif e.same_string ("jpg") or e.same_string ("jpeg") then
+				Result := "image/jpg"
+      		else
+				Result := "application/force-download"
+			end
+		end
+
+	file_extension (fn: STRING): STRING
+		local
+			p: INTEGER
+		do
+			p := fn.last_index_of ('.', fn.count)
+			if p > 0 then
+				Result := fn.substring (p + 1, fn.count)
+			else
+				Result := ""
+			end
+		end
+
+	basename (fn: STRING): STRING
+		local
+			p: INTEGER
+		do
+			p := fn.last_index_of ((create {OPERATING_ENVIRONMENT}).Directory_separator, fn.count)
+			if p > 0 then
+				Result := fn.substring (p + 1, fn.count)
+			else
+				Result := fn
+			end
+		end
+
+	dirname (fn: STRING): STRING
+		local
+			p: INTEGER
+		do
+			p := fn.last_index_of ((create {OPERATING_ENVIRONMENT}).Directory_separator, fn.count)
+			if p > 0 then
+				Result := fn.substring (1, p - 1)
+			else
+				Result := ""
+			end
+		end
+
+	execute_exit_application (henv: HTTPD_ENVIRONMENT)
+		do
+			http_put_string (header ("FCGI Eiffel Application - Bye bye"))
+			http_put_string (html_menu (henv))
+			http_put_string ("<h1>Eiffel Web Application - bye bye (request count="+request_count.out+")</h1>")
+			http_put_string (footer)
+			http_flush;
+			(create {EXCEPTIONS}).die (0)
+		end
+
+	execute_help_application (henv: HTTPD_ENVIRONMENT)
+		do
+			http_put_string (header ("FCGI Eiffel Application - Help"))
+			http_put_string (html_menu (henv))
+			http_put_string ("<h1>Help ...</h1>")
+			http_put_string (footer)
+		end
+
+	execute_default_application (henv: HTTPD_ENVIRONMENT)
+		local
+			rqst_uri: detachable STRING
+			n: INTEGER
+		do
 			http_put_string (header ("FCGI Eiffel Application"))
+			http_put_string (html_menu (henv))
 			if henv.has_error then
 				http_put_string ("<div>ERROR occurred%N")
 				print_errors (henv.error_handler)
@@ -120,7 +317,7 @@ feature -- Execution
 			print_hash_table_string_string (henv.variables_post)
 			http_put_string ("</ul>")
 
-			if attached henv.uploaded_files as l_files then
+			if attached henv.uploaded_files as l_files and then not l_files.is_empty then
 				http_put_string ("<ul>FILES variables%N")
 				from
 					l_files.start
@@ -131,8 +328,27 @@ feature -- Execution
 					http_put_string (" filename=" + l_files.item_for_iteration.name)
 					http_put_string (" type=" + l_files.item_for_iteration.type)
 					http_put_string (" size=" + l_files.item_for_iteration.size.out)
+					http_put_string (" tmp_basename=" + l_files.item_for_iteration.tmp_basename)
 					http_put_string (" tmp_name=" + l_files.item_for_iteration.tmp_name)
-					http_put_string ("<img src=%"tmp-" + l_files.item_for_iteration.name + "%" />")
+					if attached henv.path_info as l_path_info then
+						http_put_string ("<img src=%"")
+						from
+							n := l_path_info.occurrences ('/')
+						until
+							n = 0
+						loop
+						 	http_put_string ("../")
+						 	n := n - 1
+						end
+						http_put_string (l_files.item_for_iteration.tmp_basename + "%" />")
+					else
+						http_put_string ("<img src=%"" + l_files.item_for_iteration.tmp_basename + "%" />")
+					end
+					if attached henv.execution_variables.script_name as l_script_name then
+						http_put_string ("<a href=%"" + l_script_name + "/download/" + l_files.item_for_iteration.tmp_basename + "%">")
+						http_put_string ("<img src=%"" + l_script_name + "/file/" + l_files.item_for_iteration.tmp_basename + "%" />")
+						http_put_string ("</a>")
+					end
 
 					http_put_string ("</li>%N")
 					l_files.forth
@@ -160,10 +376,18 @@ feature -- Execution
 			post_execute_ignored := False
 		end
 
-	post_execute (henv: detachable HTTPD_ENVIRONMENT)
+	post_execute (henv: detachable HTTPD_ENVIRONMENT; e: detachable EXCEPTION)
 		do
+			if e /= Void then
+				http_put_string ("Exception occurred%N")
+				http_put_string ("<p>" + e.meaning + "</p")
+				if attached e.exception_trace as l_trace then
+					http_put_string ("<pre>" + l_trace + "</pre>")
+				end
+				http_flush
+			end
 			if not post_execute_ignored then
-				Precursor (henv)
+				Precursor (henv, e)
 			end
 		end
 
@@ -215,9 +439,17 @@ feature -- Access
 			Result.append_character ('%N')
 		end
 
+	header_auth: STRING
+		do
+			Result := ""
+			Result.append ("Status: 401 Unauthorized%R%N")
+			Result.append ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"%R%N%R%N")
+		end
+
 	header (a_title: STRING): STRING
 		do
-			Result := "Content-type: text/html%R%N"
+			Result := ""
+			Result.append ("Content-type: text/html%R%N")
 --			Result.append (cookie ("foo", "bar#" + request_count.out, Void, Void, Void, Void))
 			Result.append ("%R%N")
 			Result.append ("<html>%N")

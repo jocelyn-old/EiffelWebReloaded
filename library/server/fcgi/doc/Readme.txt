@@ -16,6 +16,8 @@
    FcgidConnectTimeout 8
    FcgidIOTimeout 3000
    FcgidBusyTimeout 3200
+   FcgidPassHeader Authorization 
+
    
    alias /eiffelweb/ "c:/_dev/EiffelWebReloaded/library/fcgi/tests/EIFGENs/eiffelweb/W_code/"
    <Location /eiffelweb/>
