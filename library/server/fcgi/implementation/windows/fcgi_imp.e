@@ -3,8 +3,6 @@ deferred class FCGI_IMP
 inherit
 	FCGI_I
 
-	STRING_HANDLER
-
 feature {NONE} -- Initialization
 
 	make
@@ -128,22 +126,7 @@ feature -- FCGI output
 
 feature -- FCGI input
 
-	read_from_stdin (n: INTEGER)
-			-- Read up to n bytes from stdin and store in c_buffer
-		local
-			l_c_str: C_STRING
-			l_count: INTEGER
-		do
-			last_read_is_empty_ref.set_item (False)
-			l_c_str := c_buffer
-			l_count := fcgi.read_content_into (l_c_str.item, n)
-			last_read_count_ref.set_item (l_count)
-			if l_count <= 0 then
-				last_read_is_empty_ref.set_item (True)
-			end
-		end
-
-	copy_from_stdin (n: INTEGER; tf: FILE)
+	copy_from_stdin (n: INTEGER; f: FILE)
 			-- Read up to n bytes from stdin and write to given file
 		local
 			l_c_str: C_STRING
@@ -165,10 +148,19 @@ feature -- FCGI input
 					-- EOF
 					done := True
 				else
-					tf.put_managed_pointer (c_buffer.managed_data, 0, num)
+					f.put_managed_pointer (c_buffer.managed_data, 0, num)
 					writecount := writecount + num
 				end
 			end
+		end
+
+feature {NONE} -- Implementation: FCGI Input
+
+	fill_pointer_from_stdin (p: POINTER; n: INTEGER): INTEGER
+			-- Read up to `n' bytes from stdin and store in pointer `p'
+			-- and return number of bytes read.
+		do
+			Result := fcgi.read_content_into (p, n)
 		end
 
 feature -- I/O Routines
@@ -224,62 +216,9 @@ feature -- I/O Routines
 --RFO		end
 
 
-feature -- Status
-
-	buffer_contents: STRING
-		local
-			n: like last_read_count
-		do
-			n := last_read_count
-			create Result.make (n)
-			Result.set_count (n)
-			c_buffer.read_substring_into (Result, 1, n)
-		end
-
-	buffer_capacity: INTEGER
-		do
-			Result := c_buffer.capacity
-		end
-
-feature {NONE} -- Shared buffer
-
-	c_buffer: C_STRING
-			-- Buffer for Eiffel to C and C to Eiffel string conversions.
-		once
-			create Result.make_empty (K_input_bufsize)
-		ensure
-			c_buffer_not_void: Result /= Void
-		end
 
 feature {NONE} -- Implementation: environment
 
---	separated_variables (a_var: STRING): detachable TUPLE [value: STRING; key: STRING]
---			-- Given an environment variable `a_var' in form of "key=value",
---			-- return separated key and value.
---			-- Return Void if `a_var' is in incorrect format.
---		require
---			a_var_attached: a_var /= Void
---		local
---			i, j: INTEGER
---			done: BOOLEAN
---		do
---			j := a_var.count
---			from
---				i := 1
---			until
---				i > j or done
---			loop
---				if a_var.item (i) = '=' then
---					done := True
---				else
---					i := i + 1
---				end
---			end
---			if i > 1 and then i < j then
---				Result := [a_var.substring (i + 1, j), a_var.substring (1, i - 1)]
---			end
---		end
---
 --	environ_strings_pointer (p_nb: TYPED_POINTER [INTEGER]): POINTER
 --			-- Environment variable strings returned by `GetEnvironmentStringsA'
 --			-- `p_nb' return the count of environment variables.

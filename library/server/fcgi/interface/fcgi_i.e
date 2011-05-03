@@ -1,5 +1,8 @@
 deferred class FCGI_I
 
+inherit
+	STRING_HANDLER
+
 feature {NONE} -- Initialization
 
 	make
@@ -64,20 +67,47 @@ feature -- Status
 
 feature -- Input
 
+	fill_string_from_stdin (s: STRING; n: INTEGER)
+			-- Read up to `n' bytes from stdin and store in string `s'
+		local
+			new_count: INTEGER
+			str_area: ANY
+		do
+			s.grow (n)
+			str_area := s.area
+			new_count := fill_pointer_from_stdin ($str_area, n)
+			s.set_count (new_count)
+		end
+
 	read_from_stdin (n: INTEGER)
 			-- Read up to n bytes from stdin and store in input buffer
 		require
 			small_enough: n <= buffer_capacity
+		local
+			l_c_str: C_STRING
+			l_count: INTEGER
+		do
+			last_read_is_empty_ref.set_item (False)
+			l_c_str := c_buffer
+			l_count := fill_pointer_from_stdin (l_c_str.item, n)
+			last_read_count_ref.set_item (l_count)
+			if l_count <= 0 then
+				last_read_is_empty_ref.set_item (True)
+			end
+		end
+
+	fill_pointer_from_stdin (p: POINTER; n: INTEGER): INTEGER
+			-- Read up to `n' bytes from stdin and store in pointer `p'
+			-- and return number of bytes read.
 		deferred
 		end
 
-
-	copy_from_stdin (n: INTEGER; tf: FILE)
+	copy_from_stdin (n: INTEGER; f: FILE)
 			-- Read up to n bytes from stdin and write to given file
 		require
 --			small_enough: n <= buffer_capacity
-			file_exists: tf /= Void
-			file_open: tf.is_open_write or tf.is_open_append
+			file_exists: f /= Void
+			file_open: f.is_open_write or f.is_open_append
 		deferred
 		end
 
@@ -93,12 +123,24 @@ feature -- Output
 feature -- Implementation		
 
 	buffer_contents: STRING
-		deferred
+		local
+			n: like last_read_count
+		do
+			n := last_read_count
+			create Result.make (n)
+			Result.set_count (n)
+			c_buffer.read_substring_into (Result, 1, n)
 		end
 
 	buffer_capacity: INTEGER
-		deferred
+		do
+			Result := c_buffer.capacity
 		end
+
+--RFO	last_string: STRING
+--RFO		once
+--RFO			create Result.make (K_input_bufsize)
+--RFO		end
 
 	last_read_count: INTEGER
 		do
@@ -110,10 +152,16 @@ feature -- Implementation
 			Result := last_read_is_empty_ref.item
 		end
 
---RFO	last_string: STRING
---RFO		once
---RFO			create Result.make (K_input_bufsize)
---RFO		end
+feature {NONE} -- Shared buffer
+
+	c_buffer: C_STRING
+			-- Buffer for Eiffel to C and C to Eiffel string conversions.
+		once
+			create Result.make_empty (K_input_bufsize)
+		ensure
+			c_buffer_not_void: Result /= Void
+		end
+
 
 feature {NONE} -- Constants
 
@@ -127,7 +175,7 @@ feature {NONE} -- Constants
 			create Result
 		end
 
-	K_input_bufsize: INTEGER = 1024000
+	K_input_bufsize: INTEGER = 1024_000
 
 feature {NONE} -- Implementation: Environment
 

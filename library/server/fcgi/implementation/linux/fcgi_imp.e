@@ -77,19 +77,6 @@ feature -- FCGI output
 
 feature -- FCGI Input
 
-	read_from_stdin (n: INTEGER)
-			-- Read up to n bytes from stdin and store in c_buffer
-		local
-			l_c_str: C_STRING
-		do
-			last_read_is_empty_ref.set_item (False)
-			l_c_str := c_buffer
-			last_read_count_ref.set_item ({FCGI_C_API}.read_content_into (l_c_str.item, n))
-			if last_read_count <= 0 then
-				last_read_is_empty_ref.set_item (True)
-			end
-		end
-
 	copy_from_stdin (n: INTEGER; tf: FILE)
 			-- Read up to n bytes from stdin and write to given file
 		local
@@ -114,6 +101,15 @@ feature -- FCGI Input
 					writecount := writecount + num
 				end
 			end
+		end
+
+feature {NONE} -- Implementation: FCGI Input
+
+	fill_pointer_from_stdin (p: POINTER; n: INTEGER): INTEGER
+			-- Read up to `n' bytes from stdin and store in pointer `p'
+			-- and return number of bytes read.
+		do
+			Result := {FCGI_C_API}.read_content_into (p, n)
 		end
 
 feature -- I/O Routines
@@ -166,29 +162,5 @@ feature -- I/O Routines
 --RFO				read_string_into (last_string)
 --RFO--			end
 --RFO		end
-
-feature -- Status
-
-	buffer_contents: STRING
-		do
-			create Result.make (last_read_count)
-			Result.set_count (last_read_count)
-			c_buffer.read_substring_into (Result, 1, last_read_count)
-		end
-
-	buffer_capacity: INTEGER
-		do
-			Result := c_buffer.capacity
-		end
-
-feature {NONE} -- Shared buffer
-
-	c_buffer: C_STRING
-			-- Buffer for Eiffel to C and C to Eiffel string conversions.
-		once
-			create Result.make_empty (K_input_bufsize)
-		ensure
-			c_buffer_not_void: Result /= Void
-		end
 
 end
