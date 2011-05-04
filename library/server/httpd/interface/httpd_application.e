@@ -1,6 +1,7 @@
 note
 	description: "Summary description for {HTTPD_APPLICATION}."
-	author: ""
+	legal: "See notice at end of class."
+	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
 
@@ -23,13 +24,16 @@ feature -- Execution
 
 	call_execute (a_variables: HASH_TABLE [STRING, STRING])
 			-- Call execute
+			--| Note: you can redefine this feature, if you want to optimize
+			--| as much as possible a very simple query
+			--| without fetching GET, POST, ... data
 		local
 			rescued: BOOLEAN
-			henv: detachable HTTPD_ENVIRONMENT
+			henv: detachable like new_environment
 		do
 			if not rescued then
 				pre_execute
-				create henv.make (enhanced_variables (a_variables), input)
+				henv := new_environment (a_variables)
 				execute (henv)
 				post_execute (henv, Void)
 			else
@@ -45,7 +49,7 @@ feature -- Execution
 		do
 		end
 
-	post_execute (henv: detachable HTTPD_ENVIRONMENT; e: detachable EXCEPTION)
+	post_execute (henv: detachable like new_environment; e: detachable EXCEPTION)
 			-- Operation processed after `execute', or on rescue
 		do
 			if henv /= Void then
@@ -53,8 +57,20 @@ feature -- Execution
 			end
 		end
 
-	execute (henv: HTTPD_ENVIRONMENT)
+	execute (henv: like new_environment)
+			-- Execute the request
 		deferred
+		end
+
+feature -- Environment
+
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]): HTTPD_ENVIRONMENT
+			-- New httpd environment based on `a_vars' and `input'
+			--| note: you can redefine this function to create your own
+			--| descendant of HTTPD_ENVIRONMENT , or even to reuse/recycle existing
+			--| instance of HTTPD_ENVIRONMENT
+		do
+			create Result.make (a_vars, input)
 		end
 
 feature -- Input
@@ -77,9 +93,9 @@ feature -- Output
 		end
 
 	http_put_file_content (fn: STRING)
+			-- Send the content of file `fn'
 		local
 			f: RAW_FILE
-			n: INTEGER
 		do
 			create f.make (fn)
 			if f.exists and then f.is_readable then
@@ -112,37 +128,14 @@ feature -- Output
 		deferred
 		end
 
-feature -- Environment variables
-
-	enhanced_variables (a_variables: HASH_TABLE [STRING, STRING]): HASH_TABLE [STRING, STRING]
-			-- Add extra variables that might be useful
-		local
-			p: INTEGER
-		do
-			Result := a_variables
-				--| do not use `force', to avoid overwriting existing variable
-			if attached a_variables.item ("REQUEST_URI") as rq_uri then
-				p := rq_uri.index_of ('?', 1)
-				if p > 0 then
-					Result.put (rq_uri.substring (1, p-1) ,"EIFFEL_SELF")
-				else
-					Result.put (rq_uri ,"EIFFEL_SELF")
-				end
-			end
-			Result.put (unix_time_stamp.out, "REQUEST_TIME")
-		ensure
-			result_attached: Result /= Void
-		end
-
-	unix_time_stamp: INTEGER_64
-		do
-			Result := (create {DATE_TIME}.make_now_utc).definite_duration (create {DATE_TIME}.make_from_epoch (0)).seconds_count
-		end
-
-	fine_unix_time_stamp: DOUBLE
-			-- Current unix time
-		do
-			Result := (create {DATE_TIME}.make_now_utc).definite_duration (create {DATE_TIME}.make_from_epoch (0)).fine_seconds_count
-		end
-
+note
+	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
+	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
+	source: "[
+			Eiffel Software
+			5949 Hollister Ave., Goleta, CA 93117 USA
+			Telephone 805-685-1006, Fax 805-685-6869
+			Website http://www.eiffel.com
+			Customer support http://support.eiffel.com
+		]"
 end

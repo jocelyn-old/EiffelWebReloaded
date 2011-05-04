@@ -11,10 +11,13 @@ inherit
 	HTTPD_FCGI_APPLICATION
 		redefine
 			pre_execute,
-			post_execute
+			post_execute,
+			new_environment
 		end
 
 	SHARED_LOGGER
+
+	HTTP_FILE_SYSTEM_UTILITIES
 
 create
 	make
@@ -30,9 +33,16 @@ feature {NONE} -- Initialization
 			logger.close
 		end
 
+feature -- Access
+
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]): APPLICATION_ENVIRONMENT
+		do
+			create Result.make (a_vars, input)
+		end
+
 feature -- Execution
 
-	html_menu (henv: HTTPD_ENVIRONMENT): STRING
+	html_menu (henv: like new_environment): STRING
 		local
 			s: detachable STRING
 		do
@@ -44,11 +54,20 @@ feature -- Execution
 					+ "<a href=%"" + s + "/home%">Home</a> "
 					+ "<a href=%"" + s + "/help%">Help</a> "
 					+ "<a href=%"" + s + "/env%">Env</a> "
-					+ "<a href=%"" + s + "/quit%">Quit</a> "
+			if henv.authenticated then
+				Result.append ("<a href=%"" + s + "/private%">"+ henv.authenticated_login + "</a> ")
+
+				Result.append ("<a href=%"" + s + "/logout%">Logout</a> ")
+			else
+				Result.append ("<a href=%"" + s + "/login%">Login</a> ")
+			end
+			Result.append (
+					  "<a href=%"" + s + "/quit%">Exit</a> "
 					+ "</div>"
+				)
 		end
 
-	execute (henv: HTTPD_ENVIRONMENT)
+	execute (henv: like new_environment)
 		local
 			rqst_uri: detachable STRING
 			l_path_info: detachable STRING
@@ -72,6 +91,12 @@ feature -- Execution
 				execute_help_application (henv)
 			elseif l_path_info.starts_with ("/home") then
 				execute_home_application (henv)
+			elseif l_path_info.starts_with ("/login") then
+				execute_login_application (henv)
+			elseif l_path_info.starts_with ("/logout") then
+				execute_logout_application (henv)
+			elseif l_path_info.starts_with ("/private") then
+				execute_private_application (henv)
 			elseif l_path_info.starts_with ("/env") then
 				execute_default_application (henv)
 			elseif l_path_info.starts_with ("/file") or l_path_info.starts_with ("/download") then
@@ -83,7 +108,7 @@ feature -- Execution
 			end
 		end
 
-	execute_home_application (henv: HTTPD_ENVIRONMENT)
+	execute_home_application (henv: like new_environment)
 		do
 			http_put_string (header ("FCGI Eiffel Application - Home"))
 			http_put_string (html_menu (henv))
@@ -92,7 +117,76 @@ feature -- Execution
 			http_put_string (footer)
 		end
 
-	execute_file_application (henv: HTTPD_ENVIRONMENT)
+	execute_login_application (henv: like new_environment)
+		do
+			if not henv.authenticated then
+				http_put_header_line ("Status: 401 Unauthorized")
+				http_put_header_line ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
+				http_put_header_line ("")
+			else
+				http_put_header_line ("Content-type: text/html")
+				http_put_header_line (cookie ("uuid", "uuid_" + henv.authenticated_login, Void, Void, Void, Void))
+				http_put_header_line (cookie ("auth", "yes", Void, Void, Void, Void))
+				http_put_header_line (cookie ("user", henv.authenticated_login, Void, Void, Void, Void))
+				http_put_header_line ("")
+				http_put_string ("<html>%N")
+				http_put_string ("<head><title>Login ...</title></head>")
+				http_put_string ("<body>%N")
+				http_put_string (html_menu (henv))
+				http_put_string ("Hello " + henv.authenticated_login + "%N")
+				http_put_string ("Cookies:")
+				print_environment_variables (henv.cookies)
+				http_put_string (footer)
+			end
+
+--			http_put_string (header ("FCGI Eiffel Application - Home"))
+--			http_put_string (html_menu (henv))
+--			http_put_string ("<h1> Welcome to the Eiffel Web Application (request count="+request_count.out+")</h1>")
+--			http_put_string ("PATH_INFO=" + henv.path_info + "<br/>")
+--			http_put_string (footer)
+		end
+
+	execute_logout_application (henv: like new_environment)
+		do
+			http_put_header_line ("Content-type: text/html")
+			http_put_header_line (cookie ("uuid", "", Void, Void, Void, Void))
+			http_put_header_line (cookie ("auth", "no", Void, Void, Void, Void))
+			http_put_header_line (cookie ("user", "", Void, Void, Void, Void))
+			http_put_header_line ("")
+			http_put_string ("<html>%N")
+			http_put_string ("<head><title>Logout ...</title></head>")
+			http_put_string ("<body>%N")
+			http_put_string (html_menu (henv))
+			http_put_string ("Bye " + henv.authenticated_login + "%N")
+			http_put_string ("Cookies:")
+			print_environment_variables (henv.cookies)
+
+			http_put_string (footer)
+		end
+
+	execute_private_application (henv: like new_environment)
+		do
+			if not henv.authenticated then
+				http_put_header_line ("Status: 401 Unauthorized")
+				http_put_header_line ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
+				http_put_header_line ("")
+			else
+				http_put_string (header ("FCGI Eiffel Application - Private"))
+				http_put_string (html_menu (henv))
+				http_put_string ("<h1> Welcome to the private side of Eiffel Web Application (request count="+request_count.out+")</h1>")
+				http_put_string ("PATH_INFO=" + henv.path_info + "<br/>")
+				if attached henv.http_authorization as l_auth then
+					http_put_string ("Auth=" + l_auth + "<br/>")
+				else
+					http_put_string ("Auth= ...<br/>")
+				end
+				http_put_string ("Cookies:")
+				print_environment_variables (henv.cookies)
+				http_put_string (footer)
+			end
+		end
+
+	execute_file_application (henv: like new_environment)
 		local
 			l_path_info: STRING
 			p: INTEGER
@@ -134,83 +228,7 @@ feature -- Execution
 			end
 		end
 
-	filesize (fn: STRING): INTEGER
-		local
-			f: RAW_FILE
-		do
-			create f.make (fn)
-			if f.exists then
-				Result := f.count
-			end
-		end
-
-	content_type_by_extension (ext: STRING): STRING
-		local
-			e: STRING
-		do
-			e := ext.as_lower
-			if e.same_string ("pdf") then
-      			Result := "application/pdf"
-      		elseif e.same_string ("exe") then
-      			Result := "application/octet-stream"
-      		elseif e.same_string ("exe") then
-				Result := "application/octet-stream"
-      		elseif e.same_string ("zip") then
-				Result := "application/zip"
-      		elseif e.same_string ("doc") then
-				Result := "application/msword"
-      		elseif e.same_string ("xls") then
-				Result := "application/vnd.ms-excel"
-      		elseif e.same_string ("ppt") then
-				Result := "application/vnd.ms-powerpoint"
-      		elseif e.same_string ("gif") then
-				Result := "image/gif"
-      		elseif e.same_string ("png") then
-				Result := "image/png"
-      		elseif e.same_string ("jpg") or e.same_string ("jpeg") then
-				Result := "image/jpg"
-      		else
-				Result := "application/force-download"
-			end
-		end
-
-	file_extension (fn: STRING): STRING
-		local
-			p: INTEGER
-		do
-			p := fn.last_index_of ('.', fn.count)
-			if p > 0 then
-				Result := fn.substring (p + 1, fn.count)
-			else
-				Result := ""
-			end
-		end
-
-	basename (fn: STRING): STRING
-		local
-			p: INTEGER
-		do
-			p := fn.last_index_of ((create {OPERATING_ENVIRONMENT}).Directory_separator, fn.count)
-			if p > 0 then
-				Result := fn.substring (p + 1, fn.count)
-			else
-				Result := fn
-			end
-		end
-
-	dirname (fn: STRING): STRING
-		local
-			p: INTEGER
-		do
-			p := fn.last_index_of ((create {OPERATING_ENVIRONMENT}).Directory_separator, fn.count)
-			if p > 0 then
-				Result := fn.substring (1, p - 1)
-			else
-				Result := ""
-			end
-		end
-
-	execute_exit_application (henv: HTTPD_ENVIRONMENT)
+	execute_exit_application (henv: like new_environment)
 		do
 			http_put_string (header ("FCGI Eiffel Application - Bye bye"))
 			http_put_string (html_menu (henv))
@@ -220,7 +238,7 @@ feature -- Execution
 			(create {EXCEPTIONS}).die (0)
 		end
 
-	execute_help_application (henv: HTTPD_ENVIRONMENT)
+	execute_help_application (henv: like new_environment)
 		do
 			http_put_string (header ("FCGI Eiffel Application - Help"))
 			http_put_string (html_menu (henv))
@@ -228,7 +246,7 @@ feature -- Execution
 			http_put_string (footer)
 		end
 
-	execute_default_application (henv: HTTPD_ENVIRONMENT)
+	execute_default_application (henv: like new_environment)
 		local
 			rqst_uri: detachable STRING
 			n: INTEGER
@@ -376,7 +394,7 @@ feature -- Execution
 			post_execute_ignored := False
 		end
 
-	post_execute (henv: detachable HTTPD_ENVIRONMENT; e: detachable EXCEPTION)
+	post_execute (henv: detachable like new_environment; e: detachable EXCEPTION)
 		do
 			if e /= Void then
 				http_put_string ("Exception occurred%N")
@@ -435,8 +453,6 @@ feature -- Access
 			if secure /= Void then
 				Result.append (";secure=" + secure)
 			end
-			Result.append_character ('%R')
-			Result.append_character ('%N')
 		end
 
 	header_auth: STRING
@@ -451,6 +467,7 @@ feature -- Access
 			Result := ""
 			Result.append ("Content-type: text/html%R%N")
 --			Result.append (cookie ("foo", "bar#" + request_count.out, Void, Void, Void, Void))
+			Result.append ("%R%N")
 			Result.append ("%R%N")
 			Result.append ("<html>%N")
 			Result.append ("<head><title>" + a_title + "</title></head>")

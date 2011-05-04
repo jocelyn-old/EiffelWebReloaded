@@ -1,12 +1,21 @@
 note
-	description: "Summary description for {HTTPD_ENVIRONMENT}."
+	description: "[
+			Server environment of the httpd request
+			
+			You can create your own descendant of this class to
+			add/remove specific value or processing
+			
+			This object is created by {HTTPD_APPLICATION}.new_environment
+		]"
+	legal: "See notice at end of class."
+	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
 	HTTPD_ENVIRONMENT
 
-create
+create {HTTPD_APPLICATION}
 	make
 
 feature {NONE} -- Initialization
@@ -23,7 +32,28 @@ feature {NONE} -- Initialization
 			create execution_variables.make_with_variables (a_vars)
 			create uploaded_files.make (0)
 			create error_handler.make
+
+			initialize
 			analyze
+		end
+
+	initialize
+			-- Specific initialization
+		local
+			dtu: HTTP_DATE_TIME_UTILITIES
+			p: INTEGER
+		do
+			create dtu
+				--| do not use `force', to avoid overwriting existing variable
+			if attached execution_variables.request_uri as rq_uri then
+				p := rq_uri.index_of ('?', 1)
+				if p > 0 then
+					execution_variables.add_variable (rq_uri.substring (1, p-1), "CURRENT_SELF")
+				else
+					execution_variables.add_variable (rq_uri, "CURRENT_SELF")
+				end
+			end
+			execution_variables.add_variable (dtu.unix_time_stamp (Void).out, "REQUEST_TIME")
 		end
 
 feature -- Recycle
@@ -57,13 +87,6 @@ feature -- Basic operation
 			-- Analyze environment, and set various attributes
 		do
 			extract_variables
-			if not has_error then
-				validate_http_cookie
-			end
-		end
-
-	validate_http_cookie
-		do
 		end
 
 feature -- Error handling
@@ -210,7 +233,7 @@ feature -- Authorization
 
 feature -- Queries
 
-	variables_GET: HTTPD_ENVIRONMENT_VARIABLES
+	variables_GET: HTTPD_REQUEST_VARIABLES
 			-- Variables from url
 		local
 			vars: like internal_variables_GET
@@ -244,7 +267,7 @@ feature -- Queries
 			Result := vars
 		end
 
-	variables_POST: HTTPD_ENVIRONMENT_VARIABLES
+	variables_POST: HTTPD_REQUEST_VARIABLES
 			-- Variables sent by POST request
 		local
 			vars: like internal_variables_POST
@@ -800,4 +823,14 @@ invariant
 	path_info_attached: path_info /= Void
 	content_type_attached: content_type /= Void
 
+note
+	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
+	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
+	source: "[
+			Eiffel Software
+			5949 Hollister Ave., Goleta, CA 93117 USA
+			Telephone 805-685-1006, Fax 805-685-6869
+			Website http://www.eiffel.com
+			Customer support http://support.eiffel.com
+		]"
 end
