@@ -73,11 +73,20 @@ feature -- Environment
 			create Result.make (a_vars, input)
 		end
 
-feature -- Input
+feature -- Input/Output
 
 	input: HTTPD_SERVER_INPUT
-			-- Input from httpd server
+			-- Input from client
 		deferred
+		ensure
+			result_attache: Result /= Void
+		end
+
+	output: HTTPD_SERVER_OUTPUT
+			-- Output to client
+		deferred
+		ensure
+			result_attache: Result /= Void
 		end
 
 feature -- Output

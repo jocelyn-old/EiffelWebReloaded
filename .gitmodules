@@ -1,3 +1,6 @@
 [submodule "3rd/fcgi-2.4.0"]
 	path = 3rd/fcgi-2.4.0
 	url = git@github.com:jocelyn/libfcgi.git
+[submodule "library\\text\\json"]
+	path = library\\text\\json
+	url = git://github.com/Eiffel-World/ejson-svn.git

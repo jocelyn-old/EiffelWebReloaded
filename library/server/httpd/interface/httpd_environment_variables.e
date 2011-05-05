@@ -6,7 +6,7 @@ note
 	revision: "$Revision$"
 
 class
-	HTTPD_EXECUTION_VARIABLES
+	HTTPD_ENVIRONMENT_VARIABLES
 
 inherit
 	HASH_TABLE [STRING, STRING]

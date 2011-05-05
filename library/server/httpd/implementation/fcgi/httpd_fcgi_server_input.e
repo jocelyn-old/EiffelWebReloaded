@@ -49,7 +49,7 @@ feature -- Access
 
 feature {NONE} -- Implementation
 
-	fcgi: FCGI
+	fcgi: FCGI;
 			-- Bridge to FCGI world
 
 note

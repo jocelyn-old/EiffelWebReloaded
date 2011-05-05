@@ -11,13 +11,21 @@ class
 	HTTPD_REQUEST_VARIABLES
 
 inherit
-	HASH_TABLE [STRING_32, STRING_32]
+	ITERABLE [STRING_32]
+		redefine
+			new_cursor
+		end
 
 create
 	make,
 	make_from_urlencoded
 
 feature -- Initialization
+
+	make (n: INTEGER)
+		do
+			create variables.make (n)
+		end
 
 	make_from_urlencoded (a_content: STRING; decoding: BOOLEAN)
 		do
@@ -58,13 +66,36 @@ feature -- Import urlencoded
 								l_name := string_routines.string_url_decoded (l_name)
 								l_value := string_routines.string_url_decoded (l_value)
 							end
-							force (l_value, l_name)
+							add_variable (l_value, l_name)
 						end
 					end
 				end
 			end
 		end
 
+feature -- Access: table
+
+	new_cursor: HASH_TABLE_ITERATION_CURSOR [STRING_32, STRING_32]
+			-- Fresh cursor associated with current structure
+		do
+			create Result.make (variables)
+		end
+
+feature {HTTPD_ENVIRONMENT} -- Element change
+
+	add_variable (v: STRING_32; k: STRING_32)
+			-- Added `k,v' to variables table
+		require
+			k_attached: k /= Void
+			v_attached: v /= Void
+		do
+			variables.force (v, k)
+		end
+
+feature {HTTPD_ENVIRONMENT} -- Element change		
+
+	variables: HASH_TABLE [STRING_32, STRING_32]
+			-- Variables table
 
 feature {NONE} -- Implementation
 

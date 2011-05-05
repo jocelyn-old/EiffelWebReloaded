@@ -1,15 +1,43 @@
 note
-	description: "Summary description for {HTTPD_PUT_REQUEST}."
+	description: "Summary description for {HTTPD_FCGI_SERVER_OUTPUT}."
 	legal: "See notice at end of class."
 	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	HTTPD_PUT_REQUEST
+	HTTPD_FCGI_SERVER_OUTPUT
 
 inherit
-	HTTPD_REQUEST
+	HTTPD_SERVER_OUTPUT
+
+create
+	make
+
+feature {NONE} -- Initialization
+
+	make (a_fcgi: like fcgi)
+		require
+			valid_fcgi: a_fcgi /= Void
+		do
+			fcgi := a_fcgi
+		end
+
+feature -- Basic operation
+
+	put_string (s: STRING)
+			-- Send `s' to http client
+		do
+			fcgi.put_string (s)
+		end
+
+feature {NONE} -- Implementation
+
+	fcgi: FCGI
+			-- Bridge to FCGI world
+
+invariant
+	fcgi_attached: fcgi /= Void
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
@@ -21,4 +49,5 @@ note
 			Website http://www.eiffel.com
 			Customer support http://support.eiffel.com
 		]"
+
 end

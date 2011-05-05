@@ -29,7 +29,7 @@ feature {NONE} -- Initialization
 			create path_info.make_empty
 
 			content_type := default_content_type
-			create execution_variables.make_with_variables (a_vars)
+			create environment_variables.make_with_variables (a_vars)
 			create uploaded_files.make (0)
 			create error_handler.make
 
@@ -45,15 +45,15 @@ feature {NONE} -- Initialization
 		do
 			create dtu
 				--| do not use `force', to avoid overwriting existing variable
-			if attached execution_variables.request_uri as rq_uri then
+			if attached environment_variables.request_uri as rq_uri then
 				p := rq_uri.index_of ('?', 1)
 				if p > 0 then
-					execution_variables.add_variable (rq_uri.substring (1, p-1), "CURRENT_SELF")
+					environment_variables.add_variable (rq_uri.substring (1, p-1), "CURRENT_SELF")
 				else
-					execution_variables.add_variable (rq_uri, "CURRENT_SELF")
+					environment_variables.add_variable (rq_uri, "CURRENT_SELF")
 				end
 			end
-			execution_variables.add_variable (dtu.unix_time_stamp (Void).out, "REQUEST_TIME")
+			environment_variables.add_variable (dtu.unix_time_stamp (Void).out, "REQUEST_TIME")
 		end
 
 feature -- Recycle
@@ -110,12 +110,12 @@ feature -- Element change: Error handling
 
 feature -- Access: variable
 
-	all_variables: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
+	variables: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
 		local
 			vars: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
 		do
 			create Result.make (100)
-			vars := execution_variables
+			vars := environment_variables
 			from
 				vars.start
 			until
@@ -125,7 +125,7 @@ feature -- Access: variable
 				vars.forth
 			end
 
-			vars := variables_get
+			vars := variables_get.variables
 			from
 				vars.start
 			until
@@ -135,7 +135,7 @@ feature -- Access: variable
 				vars.forth
 			end
 
-			vars := variables_post
+			vars := variables_post.variables
 			from
 				vars.start
 			until
@@ -145,7 +145,7 @@ feature -- Access: variable
 				vars.forth
 			end
 
-			vars := cookies
+			vars := cookies_variables
 			from
 				vars.start
 			until
@@ -154,19 +154,29 @@ feature -- Access: variable
 				Result.force (vars.item_for_iteration, vars.key_for_iteration)
 				vars.forth
 			end
-
-
 		end
 
-	execution_variables: HTTPD_EXECUTION_VARIABLES
-			-- Execution environment
+	environment_variables: HTTPD_ENVIRONMENT_VARIABLES
+			-- Environment variables
 
-	execution_variable (a_name: STRING): detachable STRING
-			-- Execution environment variable related to `a_name'
+	environment_variable (a_name: STRING): detachable STRING
+			-- Environment variable related to `a_name'
 		require
 			a_name_valid: a_name /= Void and then not a_name.is_empty
 		do
-			Result := execution_variables.item (a_name)
+			Result := environment_variables.item (a_name)
+		end
+
+feature -- Query
+
+	script_url (a_path: STRING): STRING
+			-- Url relative to script name if any
+		do
+			if attached environment_variables.script_name as l_script_name then
+				Result := l_script_name + a_path
+			else
+				Result := a_path.string
+			end
 		end
 
 feature -- Access
@@ -192,7 +202,7 @@ feature -- Access
 	orig_path_info: detachable STRING
     		-- Original version of `path_info' before processed by Current environment
     	do
-    		Result := execution_variables.orig_path_info
+    		Result := environment_variables.orig_path_info
     	end
 
 	content_length: INTEGER
@@ -310,15 +320,45 @@ feature -- Queries
 			--| error: if /= 0 , there was an error : TODO ...
 			--| size: size of the file given by the http request
 
-	cookies: HASH_TABLE [STRING, STRING]
+	cookies_variables: HASH_TABLE [STRING, STRING]
+			-- Expanded cookies variable
+		local
+			l_cookies: like cookies
+		do
+			l_cookies := cookies
+			create Result.make (l_cookies.count)
+			from
+				l_cookies.start
+			until
+				l_cookies.after
+			loop
+				if attached l_cookies.item_for_iteration.variables as vars then
+					from
+						vars.start
+					until
+						vars.after
+					loop
+						Result.force (vars.item_for_iteration, vars.key_for_iteration)
+						vars.forth
+					end
+				else
+					check same_name: l_cookies.key_for_iteration.same_string (l_cookies.item_for_iteration.name) end
+					Result.force (l_cookies.item_for_iteration.value, l_cookies.key_for_iteration)
+				end
+				l_cookies.forth
+			end
+		end
+
+	cookies: HASH_TABLE [HTTPD_COOKIE, STRING]
 			-- Cookies Information
 		local
 			i,j,p,n: INTEGER
 			l_cookies: like internal_cookies
+			k,v: STRING
 		do
 			l_cookies := internal_cookies
 			if l_cookies = Void then
-				if attached execution_variable ({HTTPD_ENVIRONMENT_NAMES}.http_cookie) as s then
+				if attached environment_variable ({HTTPD_ENVIRONMENT_NAMES}.http_cookie) as s then
 					create l_cookies.make (5)
 					from
 						n := s.count
@@ -332,12 +372,16 @@ feature -- Queries
 							j := s.index_of (';', i)
 							if j = 0 then
 								j := n + 1
-								l_cookies.put (s.substring (i + 1, n), s.substring (p, i - 1))
+								k := s.substring (p, i - 1)
+								v := s.substring (i + 1, n)
+
 								p := 0 -- force termination
 							else
-								l_cookies.put (s.substring (i + 1, j - 1), s.substring (p, i - 1))
+								k := s.substring (p, i - 1)
+								v := s.substring (i + 1, j - 1)
 								p := j + 1
 							end
+							l_cookies.put (create {HTTPD_COOKIE}.make (k,v), k)
 						end
 					end
 				else
@@ -644,7 +688,7 @@ feature {NONE} -- Implementation: Form analyzer
 							uploaded_files.force ([l_filename, l_content_type, "", "", -1, l_content.count], l_name)
 						end
 					else
-						vars_post.force (l_content, l_name)
+						vars_post.add_variable (l_content, l_name)
 					end
 				else
 					error_handler.add_custom_error (0, "unamed multipart entry", Void)
@@ -738,17 +782,17 @@ feature -- Element change
 			--| store original PATH_INFO in ORIG_PATH_INFO
 			if s /= Void then
 				path_info := s
-				execution_variables.replace_variable (s, "ORIG_PATH_INFO")
-				if attached execution_variables.script_name as l_script_name then
+				environment_variables.replace_variable (s, "ORIG_PATH_INFO")
+				if attached environment_variables.script_name as l_script_name then
 					if s.starts_with (l_script_name) then
 						l_path_info := s.substring (l_script_name.count + 1 , s.count)
-						execution_variables.replace_variable (l_path_info, "PATH_INFO")
+						environment_variables.replace_variable (l_path_info, "PATH_INFO")
 						path_info := l_path_info
 					end
 				end
 			else
 				path_info := ""
-				execution_variables.delete_variable ("ORIG_PATH_INFO")
+				environment_variables.delete_variable ("ORIG_PATH_INFO")
 			end
 		end
 
@@ -771,14 +815,14 @@ feature {NONE} -- Implementation
 		local
 			s: detachable STRING
 		do
-			s := execution_variables.request_uri
+			s := environment_variables.request_uri
 			if s /= Void and then not s.is_empty then
 				request_uri := s
 			else
 				report_bad_request_error ("Missing URI")
 			end
 			if not has_error then
-				s := execution_variables.request_method
+				s := environment_variables.request_method
 				if s /= Void and then not s.is_empty then
 					request_method := s
 				else
@@ -786,28 +830,28 @@ feature {NONE} -- Implementation
 				end
 			end
 			if not has_error then
-				http_user_agent := execution_variables.http_user_agent
-				http_authorization := execution_variables.http_authorization
+				http_user_agent := environment_variables.http_user_agent
+				http_authorization := environment_variables.http_authorization
 --				analyze_authorization
 			end
 			if not has_error then
-				if attached execution_variables.http_host as l_host and then not l_host.is_empty then
+				if attached environment_variables.http_host as l_host and then not l_host.is_empty then
 					set_http_host (l_host)
 				else
 					report_bad_request_error ("Missing host header")
 				end
 			end
 			if not has_error then
-				set_query_string (execution_variables.query_string)
-				s := execution_variables.content_type
+				set_query_string (environment_variables.query_string)
+				s := environment_variables.content_type
 				if s /= Void and then not s.is_empty then
 					set_content_type (s)
 				end
-				s := execution_variable ({HTTPD_ENVIRONMENT_NAMES}.content_length)
+				s := environment_variable ({HTTPD_ENVIRONMENT_NAMES}.content_length)
 				if s /= Void and then s.is_integer then
 					set_content_length (s.to_integer)
 				end
-				set_path_info (execution_variable ({HTTPD_ENVIRONMENT_NAMES}.path_info))
+				set_path_info (environment_variable ({HTTPD_ENVIRONMENT_NAMES}.path_info))
 			end
 		end
 

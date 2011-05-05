@@ -4,7 +4,7 @@ note
 	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
-	
+
 deferred class
 	HTTPD_FCGI_APPLICATION
 
@@ -17,6 +17,7 @@ feature {NONE} -- Initialization
 		do
 			create fcgi.make
 			create {HTTPD_FCGI_SERVER_INPUT} input.make (fcgi)
+			create {HTTPD_FCGI_SERVER_OUTPUT} output.make (fcgi)
 		end
 
 feature -- Access
@@ -36,6 +37,7 @@ feature -- Basic operation
 			loop
 				request_count := request_count + 1
 				call_execute (fcgi.updated_environ_variables)
+				fcgi.fcgi_finish
 				res := fcgi.fcgi_listen
 			end
 		end
@@ -46,10 +48,13 @@ feature -- Execution
 		deferred
 		end
 
-feature -- Input
+feature -- Input/Output
 
 	input: HTTPD_SERVER_INPUT
-			-- Input from httpd server
+			-- Input from client (from httpd server via FCGI)
+
+	output: HTTPD_SERVER_OUTPUT
+			-- Output to client (via httpd server/fcgi)
 
 feature -- Output
 
@@ -64,7 +69,7 @@ feature -- Output
 
 feature {NONE} -- Implementation
 
-	fcgi: FCGI
+	fcgi: FCGI;
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"

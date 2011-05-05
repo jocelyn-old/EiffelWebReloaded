@@ -48,8 +48,8 @@ feature -- Basic operation
 				attached l_cookies.item ("auth") as l_auth and then
 				attached l_cookies.item ("user") as l_user
 			then
-				authenticated := l_auth.same_string ("yes")
-				authenticated_login := l_user
+				authenticated := l_auth.value_is_string ("yes")
+				authenticated_login := l_user.value
 			end
 		end
 

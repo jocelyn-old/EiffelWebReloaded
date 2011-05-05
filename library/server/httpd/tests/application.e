@@ -42,27 +42,25 @@ feature -- Access
 
 feature -- Execution
 
-	html_menu (henv: like new_environment): STRING
-		local
-			s: detachable STRING
-		do
-			s := henv.execution_variables.script_name
-			if s = Void then
-				s := ""
-			end
-			Result := "<div> "
-					+ "<a href=%"" + s + "/home%">Home</a> "
-					+ "<a href=%"" + s + "/help%">Help</a> "
-					+ "<a href=%"" + s + "/env%">Env</a> "
-			if henv.authenticated then
-				Result.append ("<a href=%"" + s + "/private%">"+ henv.authenticated_login + "</a> ")
+	http_header: detachable HTTPD_HEADER
 
-				Result.append ("<a href=%"" + s + "/logout%">Logout</a> ")
+	html: detachable HTML_PAGE
+
+	html_menu (henv: like new_environment): STRING
+		do
+			Result := "<div> "
+					+ "<a href=%"" + henv.script_url ("/home") + "%">Home</a> "
+					+ "<a href=%"" + henv.script_url ("/help") + "%">Help</a> "
+					+ "<a href=%"" + henv.script_url ("/test")  + "%">Test</a> "
+			if henv.authenticated then
+				Result.append ("<a href=%"" + henv.script_url ("/private") + "%">"+ henv.authenticated_login + "</a> ")
+
+				Result.append ("<a href=%"" + henv.script_url ("/logout") + "%">Logout</a> ")
 			else
-				Result.append ("<a href=%"" + s + "/login%">Login</a> ")
+				Result.append ("<a href=%"" + henv.script_url ("/login") + "%">Login</a> ")
 			end
 			Result.append (
-					  "<a href=%"" + s + "/quit%">Exit</a> "
+					  "<a href=%"" + henv.script_url ("/quit") + "%">Exit</a> "
 					+ "</div>"
 				)
 		end
@@ -97,92 +95,119 @@ feature -- Execution
 				execute_logout_application (henv)
 			elseif l_path_info.starts_with ("/private") then
 				execute_private_application (henv)
-			elseif l_path_info.starts_with ("/env") then
-				execute_default_application (henv)
+			elseif l_path_info.starts_with ("/test") then
+				execute_test_application (henv)
 			elseif l_path_info.starts_with ("/file") or l_path_info.starts_with ("/download") then
 				execute_file_application (henv)
 			elseif l_path_info.starts_with ("/quit") then
 				execute_exit_application (henv)
 			else
-				execute_default_application (henv)
+				execute_test_application (henv)
 			end
 		end
 
 	execute_home_application (henv: like new_environment)
+		local
+			h: APPLICATION_HTML_PAGE
+			s: STRING
 		do
-			http_put_string (header ("FCGI Eiffel Application - Home"))
-			http_put_string (html_menu (henv))
-			http_put_string ("<h1> Welcome to the Eiffel Web Application (request count="+request_count.out+")</h1>")
-			http_put_string ("PATH_INFO=" + henv.path_info + "<br/>")
-			http_put_string (footer)
+			create h.make ("FCGI Eiffel Application - Home")
+			h.headers.put_refresh (henv.script_url ("/home"), 1, 200)
+			h.headers.put_content_type_text_html
+			h.body_menu := html_menu (henv)
+			create s.make_empty
+			s.append_string ("<h1> Welcome to the Eiffel Web Application (request count="+request_count.out+")</h1>%N")
+			s.append_string ("PATH_INFO=" + henv.path_info + "<br/>%N")
+			h.body_main := s
+			h.compute
+			http_put_string (h.string)
+			h.recycle
 		end
 
 	execute_login_application (henv: like new_environment)
+		local
+			hd: HTTPD_HEADER
+			h: APPLICATION_HTML_PAGE
+			s: STRING
 		do
 			if not henv.authenticated then
-				http_put_header_line ("Status: 401 Unauthorized")
-				http_put_header_line ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
-				http_put_header_line ("")
+				create hd.make
+				hd.put_status (401)
+				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
+				http_put_string (hd.string)
+				hd.recycle
 			else
-				http_put_header_line ("Content-type: text/html")
-				http_put_header_line (cookie ("uuid", "uuid_" + henv.authenticated_login, Void, Void, Void, Void))
-				http_put_header_line (cookie ("auth", "yes", Void, Void, Void, Void))
-				http_put_header_line (cookie ("user", henv.authenticated_login, Void, Void, Void, Void))
-				http_put_header_line ("")
-				http_put_string ("<html>%N")
-				http_put_string ("<head><title>Login ...</title></head>")
-				http_put_string ("<body>%N")
-				http_put_string (html_menu (henv))
-				http_put_string ("Hello " + henv.authenticated_login + "%N")
-				http_put_string ("Cookies:")
-				print_environment_variables (henv.cookies)
-				http_put_string (footer)
+				create h.make ("Login ...")
+				h.headers.put_content_type_text_html
+				h.headers.put_redirection (henv.script_url ("/home"), 0)
+				h.headers.put_cookie ("uuid", "uuid_" + henv.authenticated_login, Void, Void, Void, Void)
+				h.headers.put_cookie ("auth", "yes", Void, Void, Void, Void)
+				h.headers.put_cookie ("user", henv.authenticated_login, Void, Void, Void, Void)
+				h.body_menu := html_menu (henv)
+				h.body_main.append ("Hello " + henv.authenticated_login + "%N")
+				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
+				http_put_string (h.string)
+				h.recycle
 			end
-
---			http_put_string (header ("FCGI Eiffel Application - Home"))
---			http_put_string (html_menu (henv))
---			http_put_string ("<h1> Welcome to the Eiffel Web Application (request count="+request_count.out+")</h1>")
---			http_put_string ("PATH_INFO=" + henv.path_info + "<br/>")
---			http_put_string (footer)
 		end
 
 	execute_logout_application (henv: like new_environment)
+		local
+			hd: HTTPD_HEADER
+			h: APPLICATION_HTML_PAGE
 		do
-			http_put_header_line ("Content-type: text/html")
-			http_put_header_line (cookie ("uuid", "", Void, Void, Void, Void))
-			http_put_header_line (cookie ("auth", "no", Void, Void, Void, Void))
-			http_put_header_line (cookie ("user", "", Void, Void, Void, Void))
-			http_put_header_line ("")
-			http_put_string ("<html>%N")
-			http_put_string ("<head><title>Logout ...</title></head>")
-			http_put_string ("<body>%N")
-			http_put_string (html_menu (henv))
-			http_put_string ("Bye " + henv.authenticated_login + "%N")
-			http_put_string ("Cookies:")
-			print_environment_variables (henv.cookies)
-
-			http_put_string (footer)
+			if henv.authenticated then
+				create hd.make
+				hd.put_status (401)
+				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
+				hd.put_cookie ("uuid", "", Void, Void, Void, Void)
+				hd.put_cookie ("auth", "logout", Void, Void, Void, Void)
+				hd.put_cookie ("user", "", Void, Void, Void, Void)
+				http_put_string (hd.string)
+				hd.recycle
+			else
+				create h.make ("Logout ...")
+				h.headers.put_content_type_text_html
+				h.headers.put_cookie ("uuid", "", Void, Void, Void, Void)
+				h.headers.put_cookie ("auth", "lno", Void, Void, Void, Void)
+				h.headers.put_cookie ("user", "", Void, Void, Void, Void)
+				h.body_menu := html_menu (henv)
+				h.body_main.append ("Bye " + henv.authenticated_login + "%N")
+				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
+				http_put_string (h.string)
+				h.recycle
+			end
 		end
 
 	execute_private_application (henv: like new_environment)
+		local
+			hd: HTTPD_HEADER
+			h: APPLICATION_HTML_PAGE
+			s: STRING
 		do
 			if not henv.authenticated then
-				http_put_header_line ("Status: 401 Unauthorized")
-				http_put_header_line ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
-				http_put_header_line ("")
+				create hd.make
+				hd.put_status (401)
+				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
+				hd.put_redirection (henv.script_url ("/login"), 0)
+				http_put_string (hd.string)
+				hd.recycle
 			else
-				http_put_string (header ("FCGI Eiffel Application - Private"))
-				http_put_string (html_menu (henv))
-				http_put_string ("<h1> Welcome to the private side of Eiffel Web Application (request count="+request_count.out+")</h1>")
-				http_put_string ("PATH_INFO=" + henv.path_info + "<br/>")
+				create h.make ("FCGI Eiffel Application - Private")
+				h.headers.put_content_type_text_html
+				h.body_menu := html_menu (henv)
+				s := "<h1> Welcome to the private side of Eiffel Web Application (request count="+request_count.out+")</h1>"
+				s.append_string ("PATH_INFO=" + henv.path_info + "<br/>")
 				if attached henv.http_authorization as l_auth then
-					http_put_string ("Auth=" + l_auth + "<br/>")
+					s.append_string ("Auth=" + l_auth + "<br/>")
 				else
-					http_put_string ("Auth= ...<br/>")
+					s.append_string ("Auth= ...<br/>")
 				end
-				http_put_string ("Cookies:")
-				print_environment_variables (henv.cookies)
-				http_put_string (footer)
+				s.append ("All var:%N" + string_hash_table_string_string (henv.variables.new_cursor))
+				s.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
+				h.body_main.append (s)
+				http_put_string (h.string)
+				h.recycle
 			end
 		end
 
@@ -191,36 +216,20 @@ feature -- Execution
 			l_path_info: STRING
 			p: INTEGER
 			l_file: STRING
+			r: HTTPD_FILE_RESPONSE
 		do
 			l_path_info := henv.path_info
 			p := l_path_info.substring_index ("download/", 1)
 			if p > 0 then
 				l_file := l_path_info.substring (p + 9, l_path_info.count)
-				http_put_header_line ("Content-Type: application/force-download; name=%""+ basename (l_file) +"%"")
-				http_put_header_line ("Content-Type: image/png; name=%""+ basename (l_file) +"%"")
-				http_put_header_line ("Content-Transfer-Encoding: binary")
-				http_put_header_line ("Content-Length: " + filesize (l_file).out)
-				http_put_header_line ("Content-Disposition: attachment; filename=%""+ basename (l_file) +"%"")
-				http_put_header_line ("Expires: 0")
-				http_put_header_line ("Cache-Control: no-cache, must-revalidate")
-				http_put_header_line ("Pragma: no-cache")
-				http_put_header_line ("")
-
-				http_put_file_content (l_file);
+				create {HTTPD_DOWNLOAD_RESPONSE} r.make (l_file)
+				r.send (output)
 			else
 				p := l_path_info.substring_index ("file/", 1)
 				if p > 0 then
 					l_file := l_path_info.substring (p + 5, l_path_info.count)
-					http_put_header_line ("Content-Type: " + content_type_by_extension (file_extension (l_file)) + "; name=%""+ basename (l_file) +"%"")
-					http_put_header_line ("Content-Transfer-Encoding: binary")
-					http_put_header_line ("Content-Length: " + filesize (l_file).out)
-					http_put_header_line ("Content-Disposition: attachment; filename=%""+ basename (l_file) +"%"")
-					http_put_header_line ("Expires: 0")
-					http_put_header_line ("Cache-Control: no-cache, must-revalidate")
-					http_put_header_line ("Pragma: no-cache")
-					http_put_header_line ("")
-
-					http_put_file_content (l_file);
+					create {HTTPD_FILE_RESPONSE} r.make (l_file)
+					r.send (output)
 				else
 					http_put_string (header ("FCGI Eiffel Application - File"))
 					http_put_string (footer)
@@ -246,7 +255,7 @@ feature -- Execution
 			http_put_string (footer)
 		end
 
-	execute_default_application (henv: like new_environment)
+	execute_test_application (henv: like new_environment)
 		local
 			rqst_uri: detachable STRING
 			n: INTEGER
@@ -286,7 +295,7 @@ feature -- Execution
 						if
 							henv.content_length > 0
 						then
-							print_hash_table_string_string (henv.variables_post)
+							print_hash_table_string_string (henv.variables_post.new_cursor)
 --							http_put_string ("content=[")
 --							fcgi.read_from_stdin (henv.content_length)
 --							http_put_string (fcgi.buffer_contents)
@@ -328,11 +337,11 @@ feature -- Execution
 
 
 			http_put_string ("<ul>GET variables%N")
-			print_hash_table_string_string (henv.variables_get)
+			print_hash_table_string_string (henv.variables_get.new_cursor)
 			http_put_string ("</ul>")
 
 			http_put_string ("<ul>POST variables%N")
-			print_hash_table_string_string (henv.variables_post)
+			print_hash_table_string_string (henv.variables_post.new_cursor)
 			http_put_string ("</ul>")
 
 			if attached henv.uploaded_files as l_files and then not l_files.is_empty then
@@ -362,11 +371,9 @@ feature -- Execution
 					else
 						http_put_string ("<img src=%"" + l_files.item_for_iteration.tmp_basename + "%" />")
 					end
-					if attached henv.execution_variables.script_name as l_script_name then
-						http_put_string ("<a href=%"" + l_script_name + "/download/" + l_files.item_for_iteration.tmp_basename + "%">")
-						http_put_string ("<img src=%"" + l_script_name + "/file/" + l_files.item_for_iteration.tmp_basename + "%" />")
-						http_put_string ("</a>")
-					end
+					http_put_string ("<a href=%"" + henv.script_url ("/download/" + l_files.item_for_iteration.tmp_basename) + "%">")
+					http_put_string ("<img src=%"" + henv.script_url ("/file/" + l_files.item_for_iteration.tmp_basename) + "%" />")
+					http_put_string ("</a>")
 
 					http_put_string ("</li>%N")
 					l_files.forth
@@ -374,14 +381,12 @@ feature -- Execution
 				http_put_string ("</ul>")
 			end
 
-
-
 			http_put_string ("<ul>COOKIE variables%N")
-			print_hash_table_string_string (henv.cookies)
+			print_hash_table_string_string (henv.cookies_variables.new_cursor)
 			http_put_string ("</ul>")
 
 			http_put_string ("<ul>Environment variables%N")
-			print_environment_variables (henv.execution_variables)
+			print_environment_variables (henv.environment_variables)
 			http_put_string ("</ul>")
 			http_put_string (footer)
 			http_flush
@@ -481,17 +486,30 @@ feature -- Access
 
 	print_environment_variables (vars: HASH_TABLE [STRING, STRING])
 		do
-			print_hash_table_string_string (vars)
+			print_hash_table_string_string (vars.new_cursor)
 		end
 
-	print_hash_table_string_string (ht: HASH_TABLE [STRING_GENERAL, STRING_GENERAL])
+	print_hash_table_string_string (ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL])
 		do
 			from
 				ht.start
 			until
 				ht.after
 			loop
-				http_put_string ("<li><strong>" + ht.key_for_iteration.as_string_8 + "</strong> = " + ht.item_for_iteration.as_string_8 + "</li>%N")
+				http_put_string ("<li><strong>" + ht.key.as_string_8 + "</strong> = " + ht.item.as_string_8 + "</li>%N")
+				ht.forth
+			end
+		end
+
+	string_hash_table_string_string (ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL]): STRING_8
+		do
+			from
+				create Result.make (100)
+				ht.start
+			until
+				ht.after
+			loop
+				Result.append_string ("<li><strong>" + ht.key.as_string_8 + "</strong> = " + ht.item.as_string_8 + "</li>%N")
 				ht.forth
 			end
 		end
