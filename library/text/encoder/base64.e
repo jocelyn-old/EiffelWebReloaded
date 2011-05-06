@@ -1,25 +1,44 @@
 note
-	description: "Summary description for {HTTP_BASE64}."
+	description: "Summary description for {BASE64}."
 	legal: "See notice at end of class."
 	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	HTTP_BASE64
+	BASE64
+
+inherit
+	ENCODER [STRING_8, STRING_8]
+		redefine
+			valid_encoded_string
+		end
+
+feature -- Access
+
+	name: STRING = "base64"
+
+feature -- Status report
+
+	has_error: BOOLEAN
+
+	valid_encoded_string (v: STRING): BOOLEAN
+		do
+			Result := Precursor (v) and then
+					(v.is_empty or v.count >= 4)
+		end
 
 feature -- base64 encoder
 
 	encoded_string (s: STRING): STRING_8
 			-- base64 encoded value of `s'.
-		require
-			s_not_void: s /= Void
 		local
 			i,n: INTEGER
 			c: INTEGER
 			f: SPECIAL [BOOLEAN]
 			base64chars: STRING_8
 		do
+			has_error := False
 			base64chars := character_map
 			from
 				n := s.count
@@ -69,23 +88,21 @@ feature -- base64 encoder
 					i := i + 1
 				end
 			end
-		ensure
-			Result_not_void: Result /= Void
 		end
+
+feature -- Decoder
 
 	decoded_string (v: STRING): STRING
 			-- base64 decoded value of `s'.	
-		require
-			valid_string: v /= Void
-			legal_length: v.is_empty or v.count >= 4
 		local
 			byte_count: INTEGER
 			pos, n: INTEGER
 			byte1, byte2, byte3, byte4, tmp1, tmp2: INTEGER
 			done: BOOLEAN
-			c: CHARACTER
 			base64chars: STRING_8
+			c: CHARACTER
 		do
+			has_error := False
 			base64chars := character_map
 			n := v.count
 			create Result.make (n)
@@ -99,25 +116,27 @@ feature -- base64 encoder
 			loop
 				byte_count := 0
 
-				if pos < n then
-					c := v[pos + 1]
-					byte1 := base64chars.index_of (c, 1) - 1
+				pos := next_encoded_character_position (v, pos)
+				if pos <= n then
+					byte1 := base64chars.index_of (v[pos], 1) - 1
 					byte_count := byte_count + 1
 
-					if pos + 1 < n then
-						c := v[pos + 2]
-						byte2 := base64chars.index_of (c, 1) - 1
+					pos := next_encoded_character_position (v, pos)
+					if pos <= n then
+						byte2 := base64chars.index_of (v[pos], 1) - 1
 						byte_count := byte_count + 1
 
-						if pos + 2 < n then
-							c := v[pos + 3]
+						pos := next_encoded_character_position (v, pos)
+						if pos <= n then
+							c := v[pos]
 							if c /= '=' then
 								byte3 := base64chars.index_of (c, 1) - 1
 								byte_count := byte_count + 1
 							end
 
-							if pos + 3 < n then
-								c := v[pos + 4]
+							pos := next_encoded_character_position (v, pos)
+							if pos <= n then
+								c := v[pos]
 								if c /= '=' then
 									byte4 := base64chars.index_of (c, 1) - 1
 									byte_count := byte_count + 1
@@ -126,7 +145,7 @@ feature -- base64 encoder
 						end
 					end
 				end
-				pos := pos + byte_count
+--				pos := pos + byte_count
 
 				done := byte_count < 4
 
@@ -145,8 +164,41 @@ feature -- base64 encoder
 					end
 				end
 			end
+		end
+
+	next_encoded_character_position (v: STRING; from_pos: INTEGER): INTEGER
+			-- Next encoded character position from `v' starting after `from_pos' index.
+			-- Result over `v.count' denodes no remaining decodable position
+			--| Mainly to handle base64 encoded text on multiple line
+			--| thus we just skip %N, %R and eventually all blanks
+		require
+			v_attached: v /= Void
+			valid_from_pos: v.valid_index (from_pos + 1)
+		local
+			n: INTEGER
+			l_map: like character_map
+		do
+			l_map := character_map
+			from
+				Result := from_pos + 1
+				n := v.count
+			until
+				in_character_map (v[Result]) or Result > n
+			loop
+				Result := Result + 1
+			end
 		ensure
-			result_exists: Result /= Void
+			result_after_from_pos: Result > from_pos
+		end
+
+	in_character_map (c: CHARACTER): BOOLEAN
+			-- Is a character map element?
+		do
+			inspect c
+			when 'A' .. 'Z', 'a' .. 'z', '0'..'9', '+', '/', '=' then
+				Result := True
+			else
+			end
 		end
 
 feature {NONE} -- Constants

@@ -57,7 +57,6 @@ feature -- Access
 			append_end_of_line_to (Result)
 		end
 
-
 feature -- Header change: general
 
 	add_header (h: STRING)
@@ -95,10 +94,31 @@ feature -- Content related header
 			add_header ("Content-type: " + t + "; name=%"" + n + "%"")
 		end
 
-	put_content_type_text_html
-		do
-			put_content_type ("text/html")
-		end
+	put_content_type_text_css				do put_content_type ("text/css") end
+	put_content_type_text_csv				do put_content_type ("text/csv") end
+	put_content_type_text_html				do put_content_type ("text/html") end
+	put_content_type_text_javascript		do put_content_type ("text/javascript") end
+	put_content_type_text_plain				do put_content_type ("text/plain") end
+	put_content_type_text_xml				do put_content_type ("text/xml") end
+
+	put_content_type_application_json		do put_content_type ("application/json") end
+	put_content_type_application_javascript	do put_content_type ("application/javascript") end
+	put_content_type_application_zip		do put_content_type ("application/zip")	end
+
+	put_content_type_image_gif				do put_content_type ("image/gif") end
+	put_content_type_image_png				do put_content_type ("image/png") end
+	put_content_type_image_jpg				do put_content_type ("image/jpg") end
+	put_content_type_image_svg_xml			do put_content_type ("image/svg+xml") end
+
+	put_content_type_message_http			do put_content_type ("message/http") end
+
+	put_content_type_multipart_mixed		do put_content_type ("multipart/mixed") end
+	put_content_type_multipart_alternative	do put_content_type ("multipart/alternative") end
+	put_content_type_multipart_related		do put_content_type ("multipart/related") end
+	put_content_type_multipart_form_data	do put_content_type ("multipart/form-data") end
+	put_content_type_multipart_signed		do put_content_type ("multipart/signed") end
+	put_content_type_multipart_encrypted	do put_content_type ("multipart/encrypted") end
+
 
 	put_content_length (n: INTEGER)
 		do

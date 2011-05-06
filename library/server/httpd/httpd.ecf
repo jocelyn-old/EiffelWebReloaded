@@ -12,6 +12,7 @@
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
 		<library name="error" location="..\..\error\error.ecf" readonly="false"/>
 		<library name="logger" location="..\..\logger\logger.ecf" readonly="false"/>
+		<library name="encoder" location="..\..\text\encoder\encoder.ecf" readonly="false"/>
 		<library name="fcgi" location="..\fcgi\fcgi.ecf">
 			<condition>
 				<custom name="httpd_protocol" value="fcgi"/>

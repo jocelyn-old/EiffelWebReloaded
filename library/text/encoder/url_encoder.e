@@ -1,31 +1,93 @@
 note
-	description: "Summary description for {HTTP_STRING_ROUTINES}."
+	description: "Summary description for {URL_ENCODER}."
 	legal: "See notice at end of class."
 	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	HTTP_STRING_ROUTINES
+	URL_ENCODER
 
 inherit
-	ANY
+	ENCODER [STRING_32, STRING_8]
 
 	PLATFORM
 		export
 			{NONE} all
 		end
 
-feature -- URL Encoding
+feature -- Access
 
-	string_url_decoded (v: STRING): STRING_32
+	name: STRING = "URL-encoded"
+
+feature -- Status report
+
+	has_error: BOOLEAN
+
+feature -- Encoder
+
+	encoded_string (s: STRING_32): STRING_8
+			-- URL-encoded value of `s'.
+		local
+			i, n: INTEGER
+			uc: CHARACTER_32
+			c: CHARACTER_8
+		do
+			has_error := False
+			create Result.make (s.count + s.count // 10)
+			n := s.count
+			from i := 1 until i > n loop
+				uc := s.item (i)
+				if uc.is_character_8 then
+					c := uc.to_character_8
+					inspect c
+					when
+						'A' .. 'Z',
+						'a' .. 'z', '0' .. '9',
+						'.', '-', '~', '_'
+					 then
+						 Result.extend (c)
+					when ' ' then
+						Result.extend ('+')
+					else
+						Result.append (url_encoded_char (uc))
+					end
+				else
+					Result.append (url_encoded_char (uc))
+				end
+				i := i + 1
+			end
+		end
+
+feature {NONE} -- encoder character
+
+	url_encoded_char (uc: CHARACTER_32): STRING_8
+		do
+			create Result.make (3)
+			if uc.is_character_8 then
+				Result.extend ('%%')
+				Result.append (uc.code.to_hex_string)
+				from
+				until
+					Result.count < 2 or else Result[2] /= '0'
+				loop
+					Result.remove (2)
+				end
+			else
+				has_error := True --| Non-ascii escape not currently supported
+			end
+		ensure
+			exists: Result /= Void
+		end
+
+feature -- Decoder
+
+	decoded_string (v: STRING_8): STRING_32
 			-- The URL-encoded equivalent of the given string
-		require
-			exists: v /= Void
 		local
 			i, n: INTEGER
 			c: CHARACTER
-			pr: INTEGER_REF
+			pr: CELL [INTEGER]
 		do
 			n := v.count
 			create Result.make (n + n // 10)
@@ -41,8 +103,7 @@ feature -- URL Encoding
 					if i = n then
 						Result.append_character (c.to_character_32)
 					else
-						create pr
-						pr.set_item (i)
+						create pr.put (i)
 						Result.append (url_decoded_char (v, pr))
 						i := pr.item
 					end
@@ -53,9 +114,9 @@ feature -- URL Encoding
 			end
 		end
 
-	--|--------------------------------------------------------------
+feature {NONE} -- decoded character
 
-	url_decoded_char (buf: STRING; posr: INTEGER_REF): STRING_32
+	url_decoded_char (buf: STRING_8; posr: CELL [INTEGER]): STRING_32
 			-- Character(s) resulting from decoding the URL-encoded string
 		require
 			stream_exists: buf /= Void
@@ -94,7 +155,7 @@ feature -- URL Encoding
 						not_a_digit := True
 					end
 				end
-				posr.set_item (i)
+				posr.replace (i)
 				-- ival is now UCS2 value; needs conversion to UTF8
 				Result.append_code (ival.as_natural_32)
 				nb := utf8_bytes_in_sequence (buf, pos)
@@ -104,19 +165,19 @@ feature -- URL Encoding
 				if ascii_pos >= 0x80 and ascii_pos <= 0xff then
 					-- Might be improperly escaped
 					Result.append_code (ascii_pos.as_natural_32)
-					posr.set_item (pos + 2)
+					posr.replace (pos + 2)
 				else
 					Result.append_code (ascii_pos.as_natural_32)
-					posr.set_item (pos + 2)
+					posr.replace (pos + 2)
 				end
 			end
 		ensure
 			exists: Result /= Void
 		end
 
-feature -- UTF8
+feature {NONE} -- UTF8
 
-	utf8_bytes_in_sequence (s: STRING; spos: INTEGER): INTEGER
+	utf8_bytes_in_sequence (s: STRING_8; spos: INTEGER): INTEGER
 			--	If the given character is a legal first byte element in a
 			-- utf8 byte sequence (aka character), then return the number
 			-- of bytes in that sequence
@@ -166,7 +227,7 @@ feature -- UTF8
 			end
 		end
 
-feature -- Hexadecimal and strings
+feature {NONE} -- Hexadecimal and strings
 
 	hex_to_integer_32 (s: STRING): INTEGER_32
 			-- Hexadecimal string `s' converted to INTEGER_32 value

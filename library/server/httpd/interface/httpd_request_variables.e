@@ -63,8 +63,8 @@ feature -- Import urlencoded
 							l_name := s.substring (1, j - 1)
 							l_value := s.substring (j + 1, s.count)
 							if decoding then
-								l_name := string_routines.string_url_decoded (l_name)
-								l_value := string_routines.string_url_decoded (l_value)
+								l_name := url_encoder.decoded_string (l_name)
+								l_value := url_encoder.decoded_string (l_value)
 							end
 							add_variable (l_value, l_name)
 						end
@@ -99,7 +99,7 @@ feature {HTTPD_ENVIRONMENT} -- Element change
 
 feature {NONE} -- Implementation
 
-	string_routines: HTTP_STRING_ROUTINES
+	url_encoder: URL_ENCODER
 		once
 			create Result
 		end

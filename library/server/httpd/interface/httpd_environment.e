@@ -232,7 +232,7 @@ feature -- Authorization
 			if s /= Void then
 				p := s.index_of (' ', 1)
 				if p > 0 then
-					s := (create {HTTP_BASE64}).decoded_string (s.substring (p + 1, s.count))
+					s := (create {BASE64}).decoded_string (s.substring (p + 1, s.count))
 					p := s.index_of (':', 1) --| Let's assume ':' is forbidden in login ...
 					if p > 0 then
 						Result := [s.substring (1, p - 1), s.substring (p + 1, s.count)]
@@ -853,11 +853,6 @@ feature {NONE} -- Implementation
 				end
 				set_path_info (environment_variable ({HTTPD_ENVIRONMENT_NAMES}.path_info))
 			end
-		end
-
-	string_routines: HTTP_STRING_ROUTINES
-		once
-			create Result
 		end
 
 invariant

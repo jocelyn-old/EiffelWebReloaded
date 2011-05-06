@@ -99,6 +99,8 @@ feature -- Execution
 				execute_test_application (henv)
 			elseif l_path_info.starts_with ("/file") or l_path_info.starts_with ("/download") then
 				execute_file_application (henv)
+			elseif l_path_info.starts_with ("/api/") then
+				execute_api_application (henv)
 			elseif l_path_info.starts_with ("/quit") then
 				execute_exit_application (henv)
 			else
@@ -176,6 +178,53 @@ feature -- Execution
 				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
 				http_put_string (h.string)
 				h.recycle
+			end
+		end
+
+	execute_api_application (henv: like new_environment)
+		local
+			l_path_info: STRING
+			l_query: STRING
+			h: HTTPD_HEADER
+			r: HTML_PAGE
+			s: STRING
+--			j: JSON_
+		do
+--			execute_home_application (henv)
+			l_path_info := henv.path_info
+			check l_path_info.starts_with ("/api/") end
+			l_query := l_path_info.substring (("/api").count + 1, l_path_info.count)
+			if l_query.starts_with ("/test.plain") then
+				s := "This is a test for api %"" + l_query + "%".%NBye bye.%N"
+
+				create h.make
+				h.put_content_type_text_plain
+				h.put_content_length (s.count)
+				output.put_string (h.string)
+				output.put_string (s)
+				output.flush
+			elseif l_query.starts_with ("/test.xml") then
+				s := "<doc><text>This is a test for api %"" + l_query + "%".%NBye bye.%N</text></doc>"
+
+				create h.make
+				h.put_content_type_text_xml
+				h.put_content_length (s.count)
+				output.put_string (h.string)
+				output.put_string (s)
+				output.flush
+			elseif l_query.starts_with ("/test.json") then
+				s := "{ %"title%": %"Eiffel Web Sample%", %"text%": %"This is a test for api [" + l_query + "].%NBye bye.%N%" }"
+
+				create h.make
+				h.put_content_type_application_json
+				h.put_content_length (s.count)
+				output.put_string (h.string)
+				output.put_string (s)
+				output.flush
+
+			else
+				create r.make (l_query)
+				r.send (output)
 			end
 		end
 

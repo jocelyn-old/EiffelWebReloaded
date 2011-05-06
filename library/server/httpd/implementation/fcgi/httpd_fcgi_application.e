@@ -37,7 +37,7 @@ feature -- Basic operation
 			loop
 				request_count := request_count + 1
 				call_execute (fcgi.updated_environ_variables)
-				fcgi.fcgi_finish
+--				fcgi.fcgi_finish
 				res := fcgi.fcgi_listen
 			end
 		end
