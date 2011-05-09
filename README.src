@@ -1,0 +1,5 @@
+To get this code, please do
+> git clone git://github.com/EiffelSoftware/EiffelWebReloaded.git
+
+and to get the submodule themselves:
+> git submodule update --init
