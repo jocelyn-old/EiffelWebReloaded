@@ -9,6 +9,11 @@ class
 	HTTPD_ENVIRONMENT_VARIABLES
 
 inherit
+	HTTPD_VARIABLES
+		undefine
+			copy, is_equal
+		end
+
 	HASH_TABLE [STRING, STRING]
 
 create
@@ -29,6 +34,18 @@ feature {NONE} -- Initialization
 				force (a_vars.item_for_iteration, a_vars.key_for_iteration)
 				a_vars.forth
 			end
+		end
+
+feature -- Status report
+
+	variable (a_name: STRING): detachable STRING_8
+		do
+			Result := item (a_name)
+		end
+
+	has_variable (a_name: STRING): BOOLEAN
+		do
+			Result := has (a_name)
 		end
 
 feature -- Element change

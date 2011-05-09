@@ -11,10 +11,9 @@ class
 	HTTPD_REQUEST_VARIABLES
 
 inherit
+	HTTPD_VARIABLES
+
 	ITERABLE [STRING_32]
-		redefine
-			new_cursor
-		end
 
 create
 	make,
@@ -31,6 +30,18 @@ feature -- Initialization
 		do
 			make (a_content.occurrences ('&') + 1)
 			import_urlencoded (a_content, decoding)
+		end
+
+feature -- Status report
+
+	variable (a_name: STRING): detachable STRING_32
+		do
+			Result := variables.item (a_name)
+		end
+
+	has_variable (a_name: STRING): BOOLEAN
+		do
+			Result := variables.has (a_name)
 		end
 
 feature -- Import urlencoded
@@ -85,6 +96,8 @@ feature {HTTPD_ENVIRONMENT} -- Element change
 
 	add_variable (v: STRING_32; k: STRING_32)
 			-- Added `k,v' to variables table
+			-- Not exported to common client
+			-- Simulate Read Only Access
 		require
 			k_attached: k /= Void
 			v_attached: v /= Void

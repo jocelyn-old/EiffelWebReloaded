@@ -31,8 +31,7 @@
 			</condition>
 		</external_library>
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
-		<cluster name="interface" location="interface" recursive="true">
-		</cluster>
+		<cluster name="interface" location="interface" recursive="true"/>
 		<cluster name="implementation" location="implementation" recursive="true">
 			<file_rule>
 				<exclude>/linux$</exclude>

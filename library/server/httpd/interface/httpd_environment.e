@@ -29,6 +29,7 @@ feature {NONE} -- Initialization
 			create path_info.make_empty
 
 			content_type := default_content_type
+			create execution_variables.make (10)
 			create environment_variables.make_with_variables (a_vars)
 			create uploaded_files.make (0)
 			create error_handler.make
@@ -115,13 +116,24 @@ feature -- Access: variable
 			vars: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
 		do
 			create Result.make (100)
+
+			vars := execution_variables
+			from
+				vars.start
+			until
+				vars.after
+			loop
+				Result.put (vars.item_for_iteration, vars.key_for_iteration)
+				vars.forth
+			end
+
 			vars := environment_variables
 			from
 				vars.start
 			until
 				vars.after
 			loop
-				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				Result.put (vars.item_for_iteration, vars.key_for_iteration)
 				vars.forth
 			end
 
@@ -131,7 +143,7 @@ feature -- Access: variable
 			until
 				vars.after
 			loop
-				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				Result.put (vars.item_for_iteration, vars.key_for_iteration)
 				vars.forth
 			end
 
@@ -141,7 +153,7 @@ feature -- Access: variable
 			until
 				vars.after
 			loop
-				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				Result.put (vars.item_for_iteration, vars.key_for_iteration)
 				vars.forth
 			end
 
@@ -151,7 +163,7 @@ feature -- Access: variable
 			until
 				vars.after
 			loop
-				Result.force (vars.item_for_iteration, vars.key_for_iteration)
+				Result.put (vars.item_for_iteration, vars.key_for_iteration)
 				vars.forth
 			end
 		end
@@ -165,6 +177,17 @@ feature -- Access: variable
 			a_name_valid: a_name /= Void and then not a_name.is_empty
 		do
 			Result := environment_variables.item (a_name)
+		end
+
+	execution_variables: HASH_TABLE [STRING, STRING]
+			-- Execution variables set by the application
+
+	execution_variable (a_name: STRING): detachable STRING
+			-- Execution variable related to `a_name'
+		require
+			a_name_valid: a_name /= Void and then not a_name.is_empty
+		do
+			Result := execution_variables.item (a_name)
 		end
 
 feature -- Query
