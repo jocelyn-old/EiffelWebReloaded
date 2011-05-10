@@ -98,6 +98,7 @@ feature -- Content related header
 	put_content_type_text_csv				do put_content_type ("text/csv") end
 	put_content_type_text_html				do put_content_type ("text/html") end
 	put_content_type_text_javascript		do put_content_type ("text/javascript") end
+	put_content_type_text_json				do put_content_type ("text/json") end
 	put_content_type_text_plain				do put_content_type ("text/plain") end
 	put_content_type_text_xml				do put_content_type ("text/xml") end
 

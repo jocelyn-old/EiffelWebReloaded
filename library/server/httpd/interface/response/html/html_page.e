@@ -92,12 +92,10 @@ feature -- Output
 	compute
 			-- Compute the string output
 		local
-			s, t: STRING
+			s, h, t: STRING
 		do
-				--| Http headers
-			create s.make_from_string (headers.string)
-
-				--| HTML beginning			
+				--| HTML beginning
+			create s.make (128)
 			s.append_string ("<html")
 			s.append_string (attributes_to_string (html_attributes))
 			s.append_string (">%N")
@@ -119,7 +117,12 @@ feature -- Output
 
 				--| End
 			s.append_string ("</html>")
-			internal_string := s
+
+				--| Http headers
+			headers.put_content_length (s.count)
+			create h.make_from_string (headers.string)
+
+			internal_string := h + s
 		end
 
 	string: STRING
