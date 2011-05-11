@@ -109,7 +109,7 @@ feature -- Element change: Error handling
 			error_handler := ehdl
 		end
 
-feature -- Access: variable
+feature -- Access: global variable
 
 	variables: HASH_TABLE [STRING_GENERAL, STRING_GENERAL]
 		local
@@ -168,6 +168,28 @@ feature -- Access: variable
 			end
 		end
 
+	variable (n: STRING_GENERAL): detachable STRING_GENERAL
+		local
+			n8: STRING_8
+		do
+			n8 := n.as_string_8
+			Result := execution_variable (n8)
+			if Result = Void then
+				Result := environment_variable (n8)
+				if Result = Void then
+					Result := variables_get.variable (n8)
+					if Result = Void then
+						Result := variables_post.variable (n8)
+						if Result = Void then
+							Result := cookies_variables.item (n8)
+						end
+					end
+				end
+			end
+		end
+
+feature -- Access: variable		
+
 	environment_variables: HTTPD_ENVIRONMENT_VARIABLES
 			-- Environment variables
 
@@ -191,6 +213,17 @@ feature -- Access: variable
 		end
 
 feature -- Query
+
+	script_absolute_url (a_path: STRING): STRING
+			-- Absolute Url
+		do
+			Result := script_url (a_path)
+			if attached http_host as h then
+				Result.prepend (h)
+			else
+				--| Issue ??
+			end
+		end
 
 	script_url (a_path: STRING): STRING
 			-- Url relative to script name if any
