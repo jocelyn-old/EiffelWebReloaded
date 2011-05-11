@@ -21,8 +21,8 @@ feature {NONE} -- Initialization
 
 	make (a_username, a_password: detachable STRING)
 		do
-			set_service_api_url ("http://127.0.0.1:8080/sample/sample.exe/api/")
---			set_service_api_url ("http://localhost:8080/sample/sample.exe/api/")			
+			set_service_api_url ("http://127.0.0.1:8180/sample/sample.exe/api/")
+--			set_service_api_url ("http://localhost:8180/sample/sample.exe/api/")			
 			if a_username /= Void and a_password /= Void then
 				username := a_username.string
 				password := a_password.string
@@ -43,7 +43,7 @@ feature -- Sample: Help Methods
 
 	test (a_format: STRING): like api_get_auth_call
 			--Returns the string "ok" in the requested format with a 200 OK HTTP status code.			
-			-- URL: http://localhost:8080/sample/sample.exe/api/test.format
+			-- URL: http://localhost:8180/sample/sample.exe/api/test.format
 			--Formats: xml, json
 			--Method(s): GET
 		require
