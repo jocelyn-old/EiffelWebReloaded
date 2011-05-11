@@ -227,13 +227,45 @@ feature -- Query
 
 	script_url (a_path: STRING): STRING
 			-- Url relative to script name if any
+		local
+			l_base_url: like script_url_base
+			i,m,n: INTEGER
+			l_rq_uri: like request_uri
 		do
-			if attached environment_variables.script_name as l_script_name then
-				Result := l_script_name + a_path
-			else
-				Result := a_path.string
+			l_base_url := script_url_base
+			if l_base_url = Void then
+				if attached environment_variables.script_name as l_script_name then
+					l_rq_uri := request_uri
+					if l_rq_uri.starts_with (l_script_name) then
+						l_base_url := l_script_name
+					else
+						--| Handle Rewrite url engine, to have clean path
+						from
+							i := 1
+							m := l_rq_uri.count
+							n := l_script_name.count
+						until
+							i > m or i > n or l_rq_uri[i] /= l_script_name[i]
+						loop
+							i := i + 1
+						end
+						if i > 1 then
+							if l_rq_uri[i-1] = '/' then
+								i := i -1
+							end
+							l_base_url := l_rq_uri.substring (1, i - 1)
+						end
+					end
+				end
+				if l_base_url = Void then
+					create l_base_url.make_empty
+				end
+				script_url_base := l_base_url
 			end
+			Result := l_base_url + a_path
 		end
+
+	script_url_base: detachable STRING
 
 feature -- Access
 
@@ -836,19 +868,19 @@ feature -- Element change
 			--| on apache:				PATH_INFO = /foo/bar
 			--| So, we might need to check with SCRIPT_NAME and remove it on IIS
 			--| store original PATH_INFO in ORIG_PATH_INFO
+			environment_variables.delete_variable ("ORIG_PATH_INFO")
 			if s /= Void then
 				path_info := s
-				environment_variables.replace_variable (s, "ORIG_PATH_INFO")
 				if attached environment_variables.script_name as l_script_name then
 					if s.starts_with (l_script_name) then
 						l_path_info := s.substring (l_script_name.count + 1 , s.count)
 						environment_variables.replace_variable (l_path_info, "PATH_INFO")
 						path_info := l_path_info
+						environment_variables.replace_variable (s, "ORIG_PATH_INFO")
 					end
 				end
 			else
 				path_info := ""
-				environment_variables.delete_variable ("ORIG_PATH_INFO")
 			end
 		end
 
