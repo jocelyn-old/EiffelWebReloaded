@@ -34,9 +34,17 @@ feature {NONE} -- Initialization
 
 	file: detachable FILE
 
+feature -- Access
+
 	name: STRING
 
-feature -- Access
+	log_size: INTEGER
+		local
+			f: FILE
+		do
+			create {RAW_FILE} f.make (name)
+			Result := f.count
+		end
 
 	log (a_level: INTEGER; m: STRING)
 		local

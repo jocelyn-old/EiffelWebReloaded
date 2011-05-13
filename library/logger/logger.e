@@ -14,6 +14,63 @@ feature -- Access
 		deferred
 		end
 
+	logf (a_level: INTEGER; fmt: STRING; args: ARRAY [detachable ANY])
+			-- Log message formatted with arguments
+			-- replace $1 with first value from args ... and so on
+		local
+			s,num: STRING
+			i,j,n,low: INTEGER
+			c: CHARACTER
+		do
+			if args.count > 0 then
+				from
+					i := 1
+					n := fmt.count
+					create s.make (n)
+					create num.make_empty
+					low := args.lower
+				until
+					i > n
+				loop
+					c := fmt[i]
+					inspect c
+					when '$' then
+						from
+							j := 1
+						until
+							i+j > n or else not fmt[i+j].is_digit
+						loop
+							num.extend (fmt[i+j])
+							i := i + 1
+						end
+						if num.count > 0 then
+							i := i + j - 1
+							j := num.to_integer - low + 1
+							if args.valid_index (j) then
+								if attached args[j] as v then
+									s.append (v.out)
+								else
+									s.append ("Void")
+								end
+							else
+								s.extend (c)
+								s.append (num)
+							end
+							num.wipe_out
+						else
+							s.extend (c)
+						end
+					else
+						s.extend (c)
+					end
+					i := i + 1
+				end
+			else
+				s := fmt
+			end
+			log (a_level, s)
+		end
+
 	close
 		do
 		end

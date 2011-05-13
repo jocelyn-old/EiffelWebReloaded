@@ -17,11 +17,14 @@ feature {NONE} -- Initialization
 
 	make (a_title: like title)
 		do
+			initialize
+			title := a_title
+		end
+
+	initialize
+		do
 			create text.make_empty
 			create {ARRAYED_LIST [like attributes.item]} attributes.make (0)
-			create {ARRAYED_LIST [STRING]} styles.make (0)
-			create {ARRAYED_LIST [STRING]} scripts.make (0)
-			title := a_title
 		end
 
 feature -- Recycle
@@ -30,8 +33,6 @@ feature -- Recycle
 		do
 			attributes.wipe_out
 			title := Void
-			styles.wipe_out
-			scripts.wipe_out
 			text.wipe_out
 			internal_string := Void
 		end
@@ -41,10 +42,6 @@ feature -- Access
 	attributes: LIST [TUPLE [name: STRING; value: STRING]]
 
 	title: detachable STRING assign set_title
-
-	styles: LIST [STRING]
-
-	scripts: LIST [STRING]
 
 	text: STRING
 
@@ -66,8 +63,6 @@ feature -- Output
 			if attached title as t then
 				s.append_string ("<title>" + t + "</title>%N")
 			end
-			s.append_string (strings_to_string (styles, "%N"))
-			s.append_string (strings_to_string (scripts, "%N"))
 			if text.count > 0 then
 				s.append_string (text)
 				s.append_character ('%N')
@@ -101,7 +96,6 @@ feature {NONE} -- Implementation: output
 	internal_string: detachable like string
 
 invariant
-
 	text_attached: text /= Void
 
 note
