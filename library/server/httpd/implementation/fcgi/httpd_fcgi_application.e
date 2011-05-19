@@ -42,12 +42,6 @@ feature -- Basic operation
 			end
 		end
 
-feature -- Execution
-
-	execute (henv: HTTPD_ENVIRONMENT)
-		deferred
-		end
-
 feature -- Input/Output
 
 	input: HTTPD_SERVER_INPUT
@@ -69,7 +63,10 @@ feature -- Output
 
 feature {NONE} -- Implementation
 
-	fcgi: FCGI;
+	fcgi: FCGI
+
+invariant
+	fcgi_attached: fcgi /= Void
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
