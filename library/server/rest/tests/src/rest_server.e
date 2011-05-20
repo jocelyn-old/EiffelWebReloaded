@@ -119,7 +119,7 @@ feature -- Implementation
 			exit_with_code (-1)
 		end
 
-	execute_exit_application (henv: like new_environment; a_format_name: detachable STRING; a_args: detachable STRING)
+	execute_exit_application (henv: REST_ENVIRONMENT; a_format_name: detachable STRING; a_args: detachable STRING)
 		local
 			rep: REST_RESPONSE
 			s: STRING
