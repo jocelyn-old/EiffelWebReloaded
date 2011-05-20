@@ -15,23 +15,19 @@
 		<library name="encoder" location="..\..\text\encoder\encoder.ecf" readonly="false"/>
 		<library name="fcgi" location="..\fcgi\fcgi.ecf">
 			<condition>
-				<custom name="httpd_protocol" value="fcgi"/>
+				<custom name="httpd_include_fcgi" value="true"/>
 			</condition>
 		</library>
 		<library name="time" location="$ISE_LIBRARY\library\time\time-safe.ecf"/>
-		<cluster name="implementation" location="implementation\" recursive="true">
-			<file_rule>
-				<exclude>/fake$</exclude>
-				<condition>
-					<custom name="httpd_protocol" value="fcgi"/>
-				</condition>
-			</file_rule>
-			<file_rule>
-				<exclude>/fcgi$</exclude>
-				<condition>
-					<custom name="httpd_protocol" excluded_value="fcgi"/>
-				</condition>
-			</file_rule>
+		<cluster name="implementation_fcgi" location="implementation\fcgi" recursive="true" >
+			<condition>
+				<custom name="httpd_include_fcgi" value="true"/>
+			</condition>
+		</cluster>
+		<cluster name="implementation_cgi" location="implementation\cgi" recursive="true" >
+			<condition>
+				<custom name="httpd_include_cgi" value="true"/>
+			</condition>
 		</cluster>
 		<cluster name="interface" location="interface\" recursive="true"/>
 	</target>

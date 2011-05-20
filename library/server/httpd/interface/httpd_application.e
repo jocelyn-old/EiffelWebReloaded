@@ -62,7 +62,7 @@ feature -- Execution
 		deferred
 		end
 
-feature -- Environment
+feature {NONE} -- Environment
 
 	new_environment (a_vars: HASH_TABLE [STRING, STRING]): HTTPD_ENVIRONMENT
 			-- New httpd environment based on `a_vars' and `input'
