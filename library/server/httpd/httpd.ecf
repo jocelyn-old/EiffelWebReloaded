@@ -24,11 +24,7 @@
 				<custom name="httpd_include_fcgi" value="true"/>
 			</condition>
 		</cluster>
-		<cluster name="implementation_cgi" location="implementation\cgi" recursive="true" >
-			<condition>
-				<custom name="httpd_include_cgi" value="true"/>
-			</condition>
-		</cluster>
+		<cluster name="implementation_cgi" location="implementation\cgi" recursive="true" />
 		<cluster name="interface" location="interface\" recursive="true"/>
 	</target>
 </system>

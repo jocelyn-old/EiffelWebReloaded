@@ -40,7 +40,6 @@ feature -- Execution
 		local
 			rep: like new_html_page
 			s: STRING
-			hm: like handler_manager
 			rq: detachable REST_REQUEST_HANDLER
 			l_dft_format_name: detachable STRING
 			hdl_cursor: like handler_manager.new_cursor

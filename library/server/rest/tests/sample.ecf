@@ -26,7 +26,6 @@
 	<target name="sample_cgi" extends="common">
 		<root class="REST_SERVER" feature="make"/>
 		<setting name="executable_name" value="sample"/>
-		<variable name="httpd_include_cgi" value="true"/>
 		<cluster name="protocol" location=".\src\httpd\cgi\" recursive="true"/>
 		<cluster name="src" location=".\src\"/>
 		<cluster name="app" location=".\src\app\" recursive="true"/>

@@ -57,7 +57,6 @@ feature -- Access
 			a_path_valid: a_path /= Void
 		local
 			p: INTEGER
-			hds: like handlers
 			l_path: STRING
 		do
 			l_path := a_path

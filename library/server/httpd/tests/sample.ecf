@@ -11,7 +11,7 @@
 		</option>
 		<setting name="console_application" value="true"/>
 		<setting name="concurrency" value="thread"/>
-		<variable name="httpd_protocol" value="fcgi"/>
+		<variable name="httpd_include_fcgi" value="true"/>
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
 		<library name="error" location="..\..\..\error\error.ecf" readonly="false"/>
 		<library name="fcgi" location="..\..\fcgi\fcgi.ecf" readonly="false"/>
