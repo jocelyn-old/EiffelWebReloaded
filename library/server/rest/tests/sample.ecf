@@ -18,15 +18,16 @@
 	<target name="sample_fcgi" extends="common">
 		<root class="REST_SERVER" feature="make"/>
 		<setting name="executable_name" value="sample"/>
-		<variable name="httpd_include_fcgi" value="true"/>
-		<cluster name="protocol" location=".\src\httpd\fcgi\" recursive="true"/>
+		<library name="httpd_fcgi" location="..\..\httpd_support\fcgi\httpd_fcgi.ecf" readonly="false"/>
+		<cluster name="support" location=".\src\httpd\fcgi\" recursive="true"/>
 		<cluster name="src" location=".\src\"/>
 		<cluster name="app" location=".\src\app\" recursive="true"/>
 	</target>
 	<target name="sample_cgi" extends="common">
 		<root class="REST_SERVER" feature="make"/>
 		<setting name="executable_name" value="sample"/>
-		<cluster name="protocol" location=".\src\httpd\cgi\" recursive="true"/>
+		<library name="httpd_cgi" location="..\..\httpd_support\cgi\httpd_cgi.ecf" readonly="false"/>
+		<cluster name="support" location=".\src\httpd\cgi\" recursive="true"/>
 		<cluster name="src" location=".\src\"/>
 		<cluster name="app" location=".\src\app\" recursive="true"/>
 	</target>
