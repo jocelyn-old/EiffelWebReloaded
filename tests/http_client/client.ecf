@@ -5,7 +5,7 @@
 		<option warning="true" full_class_checking="true" syntax="transitional">
 		</option>
 		<library name="base" location="$ISE_LIBRARY\library\base\base.ecf"/>
-		<library name="curl" location="$ISE_LIBRARY\library\curl\curl.ecf" readonly="false"/>
+		<library name="curl" location="$ISE_LIBRARY\library\cURL\cURL.ecf" readonly="false"/>
 		<library name="json" location="..\..\library\text\json\library\json.ecf" readonly="false"/>
 		<library name="net" location="$ISE_LIBRARY\library\net\net.ecf"/>
 		<cluster name="app_client" location=".\" recursive="true">
