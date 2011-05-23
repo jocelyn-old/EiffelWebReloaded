@@ -10,7 +10,6 @@ deferred class FCGI_IMP
 inherit
 	FCGI_I
 	STRING_HANDLER
-	EXECUTION_ENVIRONMENT
 
 feature {NONE} -- Initialization
 
