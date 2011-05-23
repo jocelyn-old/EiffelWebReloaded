@@ -1,6 +1,6 @@
 [submodule "library/text/json"]
 	path = library/text/json
-	url = git://github.com/Eiffel-World/ejson-svn.git
+	url = git://github.com/Eiffel-World/ejson-ise-svn.git
 [submodule "library/server/fcgi/libfcgi"]
 	path = library/server/fcgi/libfcgi
 	url = git://github.com/EiffelSoftware/libfcgi.git
