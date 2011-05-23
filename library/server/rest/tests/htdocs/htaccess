@@ -14,11 +14,13 @@ AddHandler cgi-script exe
   RewriteEngine on
   RewriteBase /REST
 
-# To let CGI app knows about HTTP_AUTHORIZATION
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
   RewriteRule ^(.*)$ sample.eapp/$1  
+
+# To let CGI app knows about HTTP_AUTHORIZATION
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
+
 </IfModule>
