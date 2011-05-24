@@ -119,7 +119,7 @@ feature -- Output
 			s.append_string ("</html>")
 
 				--| Http headers
-			headers.put_content_length (s.count + s.occurrences ('%N')) --| FIXME: it seems we need to take into account %R%N...
+			headers.put_content_length (s.count)
 			create h.make_from_string (headers.string)
 
 			internal_string := h + s
