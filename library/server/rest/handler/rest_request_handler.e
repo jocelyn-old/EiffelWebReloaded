@@ -13,6 +13,7 @@ feature {NONE} -- Initialization
 			-- Initialize various attributes
 		do
 			create {LINKED_LIST [like parameters.item]} parameters.make
+			set_format_located_before_parameters
 		end
 
 feature -- Access
@@ -32,6 +33,15 @@ feature -- Access
 
 	parameters: LIST [attached like parameter]
 			-- Parameters information
+
+feature -- Access
+
+	output: HTTPD_SERVER_OUTPUT
+			-- Output
+		deferred
+		end
+
+feature -- Access: Format
 
 	supported_request_method_names: LIST [STRING]
 			-- Support request method such as GET, POST, ...
@@ -86,9 +96,160 @@ feature -- Access
 			end
 		end
 
+	format_located_after_parameters: BOOLEAN
+			--| path = app-path/parameters{.format}	
+		do
+			Result := format_path_location = opt_format_located_after_parameters
+		end
+
+	format_located_before_parameters: BOOLEAN
+			--| path = app-path{.format}/parameters
+		do
+			Result := format_path_location = opt_format_located_before_parameters
+		end
+
+	set_format_located_after_parameters
+		do
+			format_path_location := opt_format_located_before_parameters
+		end
+
+	set_format_located_before_parameters
+		do
+			format_path_location := opt_format_located_before_parameters
+		end
+
+feature {NONE} -- Format path location
+
+	format_path_location: INTEGER
+
+	opt_format_located_before_parameters: INTEGER = 1
+
+	opt_format_located_after_parameters: INTEGER = 2
+
+feature -- Execution
+
+	execute (henv: REST_ENVIRONMENT)
+			-- Execute request handler	
+		local
+			l_format, l_args: detachable STRING
+		do
+			if attached execution_information (henv) as l_info then
+				l_format := l_info.format
+				l_args := l_info.arguments
+			end
+			if authentication_required and then not henv.authenticated then
+				execute_unauthorized (henv, l_format, l_args)
+			else
+				execute_application (henv, l_format, l_args)
+			end
+		end
+
+	execute_unauthorized (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+		local
+			h: HTTPD_HEADER
+		do
+			create h.make
+			h.put_status ({HTTP_STATUS_CODE}.unauthorized)
+			h.put_header ("WWW-Authenticate: Basic realm=%"Eiffel auth%"")
+			output.put_string (h.string)
+			h.recycle
+		end
+
+	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+			-- Execute request handler with `a_format' ad `a_args'
+		deferred
+		end
+
+feature -- Execution: report
+
+	execution_information (henv: REST_ENVIRONMENT): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
+			-- Execution information related to the request
+		do
+			Result := path_information (henv.path_info)
+		end
+
+	path_information (a_rq_path: STRING): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
+			-- Information related to `a_path'
+		local
+			l_rq_path: STRING
+			i,p,n: INTEGER
+			l_format, l_args: detachable STRING
+		do
+			l_rq_path := a_rq_path
+			if l_rq_path.count > 0 and then l_rq_path[1] /= '/' then
+				l_rq_path := "/" + l_rq_path
+			end
+			n := l_rq_path.count
+			i := path.count + 1
+
+			if format_located_before_parameters then
+					--| path = app-path{.format}/parameters
+
+				if l_rq_path.valid_index (i) and then l_rq_path[i] = '.' then
+					p := l_rq_path.index_of ('/', i + 1)
+					if p = 0 then
+						p := n + 1
+					else
+						l_args := l_rq_path.substring (p + 1, n)
+					end
+					l_format := l_rq_path.substring (i + 1, p - 1)
+				elseif n > i then
+					check l_rq_path[i] = '/' end
+					l_args := l_rq_path.substring (i + 1, n)
+				end
+			elseif format_located_after_parameters then
+					--| path = app-path/parameters{.format}
+
+				p := l_rq_path.last_index_of ('.', n)
+				if p > i then
+					l_format := l_rq_path.substring (p + 1, n)
+					l_args := l_rq_path.substring (i, p - 1)
+				elseif n > i then
+					check l_rq_path[i] = '/' end
+					l_format := Void
+					l_args := l_rq_path.substring (i + 1, n)
+				end
+			end
+			if l_format /= Void or l_args /= Void then
+				Result := [l_format, l_args]
+			end
+		end
+
+	url (henv: REST_ENVIRONMENT; args: detachable STRING; abs: BOOLEAN): STRING
+			-- Associated url based on `path' and `args'
+			-- if `abs' then return absolute url
+		local
+			s: detachable STRING
+		do
+			s := args
+			if s /= Void and then s.count > 0 then
+				if s[1] /= '/' then
+					s := path + "/" + s
+				else
+					s := path + s
+				end
+			else
+				s := path
+			end
+			if abs then
+				Result := henv.script_absolute_url (s)
+			else
+				Result := henv.script_url (s)
+			end
+		ensure
+			result_attached: Result /= Void
+		end
+
+	hidden (henv: REST_ENVIRONMENT): BOOLEAN
+			-- Do we hide this application in service publishing
+		do
+			--| By default: False
+		end
+
 feature -- Access: parameters
 
 	parameter (n: STRING): detachable REST_REQUEST_HANDLER_PARAMETER
+			-- Parameter's object for `n'.	
 		require
 			n_not_empty: n /= Void and then not n.is_empty
 		local
@@ -110,7 +271,22 @@ feature -- Access: parameters
 			result_valid: Result /= Void implies n.same_string (Result.name)
 		end
 
+	parameter_value (n: STRING; henv: REST_ENVIRONMENT): detachable STRING_32
+			-- Parameter's value for `n'.
+		do
+			if method_get_supported then
+				Result := henv.variables_get.variable (n)
+			end
+			if Result = Void and method_post_supported then
+				Result := henv.variables_post.variable (n)
+			end
+		end
+
+feature -- Analyze: parameters
+
 	analyze_parameters (results: HASH_TABLE [STRING_32, STRING]; missings: LIST [STRING]; henv: REST_ENVIRONMENT)
+			-- Analyze parameters from `henv', and return in `results' the table of known parameters
+			-- return in `missings' the required parameters which are missing if any
 		require
 			results_attached: results /= Void
 			missing_attached: missings /= Void
@@ -134,17 +310,22 @@ feature -- Access: parameters
 			end
 		end
 
-	parameter_value (n: STRING; henv: REST_ENVIRONMENT): detachable STRING_32
+feature -- Element change
+
+	set_path (a_path: like path)
+		require
+			a_path_valid: a_path.count > 1 and then a_path[1] = '/'
 		do
-			if method_get_supported then
-				Result := henv.variables_get.variable (n)
-			end
-			if Result = Void and method_post_supported then
-				Result := henv.variables_post.variable (n)
-			end
+			path := a_path.string
 		end
 
-feature -- Implementation
+	set_description (s: like description)
+			-- Set `description' to `s'
+		do
+			description := s
+		end
+
+feature {NONE} -- Implementation
 
 	supported_request_methods: INTEGER
 			-- Support request method such as GET, POST, ...
@@ -339,104 +520,6 @@ feature -- Element change: formats
 	enable_format (f: INTEGER)
 		do
 			supported_formats := supported_formats | f
-		end
-
-feature -- Element change
-
-	set_path (a_path: like path)
-		require
-			a_path_valid: a_path.count > 1 and then a_path[1] = '/'
-		do
-			path := a_path.string
-		end
-
-	set_description (s: like description)
-			-- Set `description' to `s'
-		do
-			description := s
-		end
-
-feature -- Execution
-
-	url (henv: REST_ENVIRONMENT; args: detachable STRING; abs: BOOLEAN): STRING
-			-- Associated url based on `path' and `args'
-			-- if `abs' then return absolute url
-		local
-			s: detachable STRING
-		do
-			s := args
-			if s /= Void and then s.count > 0 then
-				if s[1] /= '/' then
-					s := path + "/" + s
-				else
-					s := path + s
-				end
-			else
-				s := path
-			end
-			if abs then
-				Result := henv.script_absolute_url (s)
-			else
-				Result := henv.script_url (s)
-			end
-		ensure
-			result_attached: Result /= Void
-		end
-
-	hidden (henv: REST_ENVIRONMENT): BOOLEAN
-			-- Do we hide this application in service publishing
-		do
-			--| By default no ...
-		end
-
-	path_information (a_rq_path: STRING): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
-			-- Information related to `a_path'
-		local
-			l_rq_path: STRING
-			i,p,n: INTEGER
-			l_format, l_args: detachable STRING
-		do
-			l_rq_path := a_rq_path
-			if l_rq_path.count > 0 and then l_rq_path[1] /= '/' then
-				l_rq_path := "/" + l_rq_path
-			end
-			n := l_rq_path.count
-			i := path.count + 1
-			if l_rq_path.valid_index (i) and then l_rq_path[i] = '.' then
-				p := l_rq_path.index_of ('/', i+1)
-				if p = 0 then
-					p := n + 1
-				else
-					l_args := l_rq_path.substring (p + 1, n)
-				end
-				l_format := l_rq_path.substring (i + 1, p - 1)
-				Result := [l_format, l_args]
-			elseif n > i then
-				Result := [Void, l_rq_path.substring (i + 1, n)]
-			end
-		end
-
-	execution_information (henv: REST_ENVIRONMENT): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
-			-- Execution information related to the request
-		do
-			Result := path_information (henv.path_info)
-		end
-
-	execute (henv: REST_ENVIRONMENT)
-			-- Execute request handler	
-		local
-			l_format, l_args: detachable STRING
-		do
-			if attached execution_information (henv) as l_info then
-				l_format := l_info.format
-				l_args := l_info.arguments
-			end
-			execute_application (henv, l_format, l_args)
-		end
-
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
-			-- Execute request handler with `a_format' ad `a_args'
-		deferred
 		end
 
 invariant

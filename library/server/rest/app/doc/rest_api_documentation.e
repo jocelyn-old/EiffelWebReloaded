@@ -50,6 +50,12 @@ feature -- Execution
 
 			if a_args /= Void and then not a_args.is_empty then
 				rq := handler_manager.handler (a_args)
+				if rq = Void then
+					rq := handler_manager.smart_handler (a_args)
+					if attached {REST_REQUEST_GROUP_HANDLER} rq as grp then
+						rq := grp.handlers.handler (a_args)
+					end
+				end
 				if
 					rq /= Void and then
 					attached rq.path_information (a_args) as l_info
@@ -61,7 +67,6 @@ feature -- Execution
 
 			if rq /= Void then
 				rep.set_big_title ("API: Technical documentation for ["+ rq.path +"]")
---				s.append_string ("<h1>API: Technical documentation for ["+ rq.path +"] </h1>%N")
 
 				s.append_string ("<div class=%"api%">")
 				s.append_string ("<h2 class=%"api-name%" >")
@@ -71,7 +76,6 @@ feature -- Execution
 				process_request_handler_doc (rq, s, henv, a_format, l_dft_format_name)
 			else
 				rep.set_big_title ("API: Technical documentation")
---				s.append_string ("<h1>API: Technical documentation</h1>%N")
 
 				from
 					hdl_cursor := handler_manager.new_cursor
@@ -109,6 +113,23 @@ feature -- Execution
 			else
 				if attached rq.description as desc then
 					s.append_string ("<div class=%"api-description%">" + desc + "</div>")
+				end
+				if attached {REST_REQUEST_GROUP_HANDLER} rq as grp then
+					s.append_string ("<div class=%"api-format%">Handler: <strong>")
+					if attached grp.handlers.new_cursor as l_handlers_cursor then
+						from
+
+						until
+							l_handlers_cursor.after
+						loop
+							s.append_string (" ")
+							s.append_string ("<a class=%"api-handler%" href=%"")
+							s.append_string (url (henv, l_handlers_cursor.item.path, False))
+							s.append_string ("%">"+ l_handlers_cursor.item.path +"</a>")
+							l_handlers_cursor.forth
+						end
+					end
+					s.append_string ("</strong></div>")
 				end
 				if attached rq.supported_format_names as l_formats and then not l_formats.is_empty then
 					s.append_string ("<div class=%"api-format%">Supported formats: <strong>")
@@ -152,7 +173,11 @@ feature -- Execution
 					if l_dft_format_name = Void then
 						s.append_string ("<span class=%"note%">to test the parameter(s), please first select a supported format.</span>%N")
 					else
-						s.append_string ("<form id=%""+ rq.path +"%" method=%"GET%" action=%"" + henv.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
+						if rq.method_post_supported then
+							s.append_string ("<form id=%""+ rq.path +"%" method=%"POST%" action=%"" + henv.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
+						else
+							s.append_string ("<form id=%""+ rq.path +"%" method=%"GET%" action=%"" + henv.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
+						end
 					end
 					s.append_string ("<ul>")
 					if attached l_params.new_cursor as l_params_cursor then
@@ -201,7 +226,6 @@ feature -- Access
 		do
 			create Result.make (path)
 		end
-
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"

@@ -60,7 +60,7 @@ feature {NONE} -- Handlers
 			m.register (create {APP_TEST}.make ("test", output))
 			m.register (create {APP_DEBUG_LOG}.make ("/debug/log", output))
 
-			create {REST_REQUEST_AGENT_HANDLER} h.make (agent execute_exit_application, "/debug/exit")
+			create {REST_REQUEST_AGENT_HANDLER} h.make (agent execute_exit_application, "/debug/exit", output)
 			h.set_description ("tell the REST server to exit (in FCGI context, this is used to reload the FCGI server)")
 			h.enable_request_method_get
 			h.enable_format_text
