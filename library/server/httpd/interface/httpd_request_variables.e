@@ -24,6 +24,7 @@ feature -- Initialization
 	make (n: INTEGER)
 		do
 			create variables.make (n)
+			variables.compare_objects
 		end
 
 	make_from_urlencoded (a_content: STRING; decoding: BOOLEAN)
@@ -33,6 +34,12 @@ feature -- Initialization
 		end
 
 feature -- Status report
+
+	count: INTEGER
+			-- Variables count
+		do
+			Result := variables.count
+		end
 
 	variable (a_name: STRING): detachable STRING_32
 		do

@@ -7,8 +7,9 @@
 			<exclude>/\.git$</exclude>
 			<exclude>/\.svn$</exclude>
 		</file_rule>
-		<option warning="true" full_class_checking="true" is_attached_by_default="true" void_safety="all">
+		<option warning="true" full_class_checking="true" is_attached_by_default="true" void_safety="all" syntax="provisional">
 		</option>
+		
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
 		<library name="error" location="..\..\error\error.ecf" readonly="false"/>
 		<library name="logger" location="..\..\logger\logger.ecf" readonly="false"/>

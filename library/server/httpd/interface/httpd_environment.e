@@ -188,6 +188,18 @@ feature -- Access: global variable
 			end
 		end
 
+	request_variable (n: STRING_GENERAL): detachable STRING_32
+			-- Variable from GET or POST
+		local
+			n8: STRING_8
+		do
+			n8 := n.as_string_8
+			Result := variables_get.variable (n8)
+			if Result = Void then
+				Result := variables_post.variable (n8)
+			end
+		end
+
 feature -- Access: variable		
 
 	environment_variables: HTTPD_ENVIRONMENT_VARIABLES
@@ -384,7 +396,6 @@ feature -- Queries
 						create vars.make (5)
 						--| FIXME: optimization ... fetch the input data progressively, otherwise we might run out of memory ...
 						s := form_input_data (n)
-
 						analyze_multipart_form (l_type, s, vars)
 					else
 						s := form_input_data (n)
@@ -642,6 +653,7 @@ feature {NONE} -- Implementation: Form analyzer
 			l_boundary: STRING
 			l_boundary_len: INTEGER
 			m: STRING
+			is_crlf: BOOLEAN
 		do
 			p := t.substring_index ("boundary=", 1)
 			if p > 0 then
@@ -654,20 +666,38 @@ feature {NONE} -- Implementation: Form analyzer
 					create l_boundary_prefix.make_empty
 				end
 				l_boundary_len := l_boundary.count
-
+					--| Let's support either %R%N and %N ... 
+					--| Since both cases might occurs (for instance, our implementation of CGI does not have %R%N)
+					--| then let's be as flexible as possible on this.
+				is_crlf := s[l_boundary_len + 1] = '%R'
 				from
-					i := 1 + l_boundary_len + 2
+					i := 1 + l_boundary_len + 1
+					if is_crlf then
+						i := i + 1 --| +1 = CR = %R
+					end
 					next_b := i
 				until
 					i = 0
 				loop
 					next_b := s.substring_index (l_boundary, i)
 					if next_b > 0 then
-						m := s.substring (i, next_b - 1 - 2) --| 2 = CR LF = %R %N
+						if is_crlf then
+							m := s.substring (i, next_b - 1 - 2) --| 2 = CR LF = %R %N							
+						else
+							m := s.substring (i, next_b - 1 - 1) --| 1 = LF = %N														
+						end
 						analyze_multipart_form_input (m, vars)
-						i := next_b + l_boundary_len + 2
+						i := next_b + l_boundary_len + 1
+						if is_crlf then
+							i := i + 1 --| +1 = CR = %R
+						end
 					else
-						if not l_boundary_prefix.same_string (s.substring (i, s.count)) then
+						if is_crlf then
+							i := i + 1
+						end
+						m := s.substring (i - 1, s.count)
+						m.right_adjust
+						if not l_boundary_prefix.same_string (m) then
 							error_handler.add_custom_error (0, "Invalid form data", "Invalid ending for form data from input")
 						end
 						i := next_b
@@ -703,6 +733,14 @@ feature {NONE} -- Implementation: Form analyzer
 					then
 						l_header := s.substring (1, p + 1)
 						l_content := s.substring (p + 4, n)
+					end
+				when '%N' then
+					if
+						n >= p + 1 and then
+						s[p+1] = '%N'
+					then
+						l_header := s.substring (1, p)
+						l_content := s.substring (p + 2, n)
 					end
 				else
 				end
