@@ -54,7 +54,7 @@ feature -- Access
 			f := file
 			if f = Void then
 				b := True
-				create {PLAIN_TEXT_FILE} f.make_open_append (name)
+				create {RAW_FILE} f.make_open_append (name)
 			end
 			f.put_string (m)
 			f.put_string ("%N")
