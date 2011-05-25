@@ -110,7 +110,7 @@ feature -- Access: Format
 
 	set_format_located_after_parameters
 		do
-			format_path_location := opt_format_located_before_parameters
+			format_path_location := opt_format_located_after_parameters
 		end
 
 	set_format_located_before_parameters
@@ -203,7 +203,7 @@ feature -- Execution: report
 				p := l_rq_path.last_index_of ('.', n)
 				if p > i then
 					l_format := l_rq_path.substring (p + 1, n)
-					l_args := l_rq_path.substring (i, p - 1)
+					l_args := l_rq_path.substring (i + 1, p - 1)
 				elseif n > i then
 					check l_rq_path[i] = '/' end
 					l_format := Void
