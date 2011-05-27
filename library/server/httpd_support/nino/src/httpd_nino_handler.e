@@ -29,7 +29,7 @@ feature -- Request processing
 	process_request (a_handler: HTTP_CONNECTION_HANDLER; a_input: HTTP_INPUT_STREAM; a_output: HTTP_OUTPUT_STREAM)
 			-- Process request ...
 		local
-			env: HASH_TABLE [STRING, STRING]
+			env, vars: HASH_TABLE [STRING, STRING]
 			p: INTEGER
 			l_request_uri, l_script_name, l_query_string: STRING
 			l_server_name, l_server_port: detachable STRING
@@ -40,7 +40,8 @@ feature -- Request processing
 			l_request_uri := a_handler.uri
 			a_headers_map := a_handler.request_header_map
 			create e
-			env := e.starting_environment_variables.twin
+			vars := e.starting_environment_variables
+			create env.make (vars.count + 10)
 
 			p := l_request_uri.index_of ('?', 1)
 			if p > 0 then
@@ -72,7 +73,6 @@ feature -- Request processing
 			add_environment_variable (a_headers_map.item ("Referer"), "HTTP_REFERER", env)
 
 			if attached a_headers_map.item ("Authorization") as l_authorization then
-				l_authorization.left_adjust
 				add_environment_variable (l_authorization, "HTTP_AUTHORIZATION", env)
 				p := l_authorization.index_of (' ', 1)
 				if p > 0 then
@@ -105,6 +105,16 @@ feature -- Request processing
 			add_environment_variable (l_server_name, "SERVER_PORT", env)
 			add_environment_variable (a_handler.version, "SERVER_PROTOCOL", env)
 			add_environment_variable ({HTTP_SERVER_CONFIGURATION}.Server_details, "SERVER_SOFTWARE", env)
+
+			from
+				vars.start
+			until
+				vars.after
+			loop
+				env.put (vars.item_for_iteration, vars.key_for_iteration)
+				vars.forth
+			end
+
 
 			callback.process_request (env, a_handler.request_header, a_input, a_output)
 		end
