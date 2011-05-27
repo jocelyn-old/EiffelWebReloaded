@@ -329,8 +329,12 @@ feature -- Authorization
 			s: detachable STRING
 		do
 			s := http_authorization
-			if s /= Void then
-				p := s.index_of (' ', 1)
+			if s /= Void and then not s.is_empty then
+				p := 1
+				if s[p] = ' ' then
+					p := p + 1
+				end
+				p := s.index_of (' ', p)
 				if p > 0 then
 					s := (create {BASE64}).decoded_string (s.substring (p + 1, s.count))
 					p := s.index_of (':', 1) --| Let's assume ':' is forbidden in login ...
