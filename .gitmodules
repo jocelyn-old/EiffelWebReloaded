@@ -4,3 +4,6 @@
 [submodule "library/server/fcgi/libfcgi"]
 	path = library/server/fcgi/libfcgi
 	url = git://github.com/EiffelSoftware/libfcgi.git
+[submodule "library/server/nino"]
+	path = library/server/nino
+	url = git://github.com/jocelyn/EiffelWebNino.git
