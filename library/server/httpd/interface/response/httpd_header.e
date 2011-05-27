@@ -20,13 +20,16 @@ feature {NONE} -- Initialization
 			-- Initialize current
 		do
 			create {ARRAYED_LIST [STRING]} headers.make (3)
+			http_version := "HTTP/1.1"
 		end
-
 
 feature -- Recycle
 
 	recycle
 		do
+			status_code := 0
+			status_message := Void
+			http_version := "HTTP/1.1"
 			headers.wipe_out
 		end
 
@@ -39,8 +42,19 @@ feature -- Access
 			-- String representation of the headers
 		local
 			l_headers: like headers
+			h: STRING
 		do
 			create Result.make (32)
+			create h.make (16)
+			h.append_string (http_version)
+			h.append_character (' ')
+			h.append_integer (status_code)
+			h.append_character (' ')
+			if attached status_message as l_status_message then
+				h.append_string (l_status_message)
+			end
+			append_line_to (h, Result)
+
 			l_headers := headers
 			if l_headers.is_empty then
 				put_content_type_text_html
@@ -67,31 +81,31 @@ feature -- Header change: general
 	put_header (h: STRING)
 			-- Add header `h' or replace existing header of same header name
 		do
-			put_header_by_name (header_name (h), h)
+			force_header_by_name (header_name (h), h)
 		end
 
 feature -- Content related header
 
 	put_content_type (t: STRING)
 		do
-			put_header ("Content-type: " + t)
+			put_header (name_content_type + colon_space + t)
 		end
 
 	add_content_type (t: STRING)
 			-- same as `put_content_type', but allow multiple definition of "Content-Type"
 		do
-			put_header ("Content-type: " + t)
+			put_header (name_content_type + colon_space + t)
 		end
 
 	put_content_type_with_name (t: STRING; n: STRING)
 		do
-			put_header ("Content-type: " + t + "; name=%"" + n + "%"")
+			put_header (name_content_type + colon_space + t + "; name=%"" + n + "%"")
 		end
 
 	add_content_type_with_name (t: STRING; n: STRING)
 			-- same as `put_content_type_with_name', but allow multiple definition of "Content-Type"	
 		do
-			add_header ("Content-type: " + t + "; name=%"" + n + "%"")
+			add_header (name_content_type + colon_space + t + "; name=%"" + n + "%"")
 		end
 
 	put_content_type_text_css				do put_content_type ("text/css") end
@@ -123,7 +137,7 @@ feature -- Content related header
 
 	put_content_length (n: INTEGER)
 		do
-			put_header ("Content-Length: " + n.out)
+			put_header (name_content_length + colon_space + n.out)
 		end
 
 	put_content_transfer_encoding (a_mechanism: STRING)
@@ -175,19 +189,22 @@ feature -- Content related header
 
 feature -- Status, ...
 
+	status_code: INTEGER
+			-- Status
+
+	status_message: detachable STRING
+			-- Optional reason
+
+	http_version: STRING
+			-- HTTP version
+
 	put_status (a_code: INTEGER)
-		local
-			h: STRING
 		do
-			create h.make (10)
-			h.append_string ("Status: ")
-			h.append_integer (a_code)
-			h.append_character (' ')
-			if attached http_status_code_message (a_code) as l_status_message then
-				h.append_string (l_status_message)
-			end
-			put_header (h)
+			status_code := a_code
+			status_message := http_status_code_message (a_code)
 		end
+
+feature -- Others
 
 	put_expires (n: INTEGER)
 		do
@@ -258,9 +275,34 @@ feature -- Cookie
 			add_header (s)
 		end
 
+feature -- Status report
+
+	has_header_named (a_name: STRING): BOOLEAN
+			-- Has header item for `n'?
+		local
+			c: like headers.new_cursor
+			n: INTEGER
+		do
+			from
+				n := a_name.count
+				c := headers.new_cursor
+			until
+				c.after or Result
+			loop
+				Result := c.item.starts_with (a_name) and then c.item [n + 1] = ':'
+				c.forth
+			end
+		end
+
+	has_content_length: BOOLEAN
+			-- Has header "content_length"
+		do
+			Result := has_header_named (name_content_length)
+		end
+
 feature {NONE} -- Implementation: Header
 
-	put_header_by_name (n: detachable STRING; h: STRING)
+	force_header_by_name (n: detachable STRING; h: STRING)
 			-- Add header `h' or replace existing header of same header name `n'
 		require
 			h_has_name_n: (n /= Void and attached header_name (h) as hn) implies n.same_string (hn)
@@ -326,6 +368,12 @@ feature {NONE} -- Implementation
 			h.append_character ('%R')
 			h.append_character ('%N')
 		end
+
+feature {NONE} -- Constants
+
+	colon_space: STRING = ": "
+	name_content_length: STRING = "Content-Length"
+	name_content_type: STRING = "Content-Type"
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
