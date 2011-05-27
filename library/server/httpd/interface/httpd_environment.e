@@ -843,12 +843,15 @@ feature {NONE} -- Internal value
 					n := 1_024
 				end
 			until
-				n = 0
+				n <= 0
 			loop
 				read_input (n)
 				t := last_input_string
 				Result.append_string (t)
-				n := t.count
+				if t.count < n then
+					n := 0
+				end
+				n := nb - t.count
 			end
 		end
 

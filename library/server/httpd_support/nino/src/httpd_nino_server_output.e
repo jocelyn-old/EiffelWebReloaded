@@ -41,7 +41,9 @@ feature -- Basic operation
 	put_string (s: STRING_8)
 			-- Send `s' to http client
 		do
-			print (s)
+			debug ("nino")
+				print (s)
+			end
 			if attached nino_output as o then
 				o.put_string (s)
 			end

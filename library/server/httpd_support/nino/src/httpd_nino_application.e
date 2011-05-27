@@ -53,6 +53,7 @@ feature -- Basic operation
 			-- Process request ...
 		local
 			l_path_info: STRING
+			p: INTEGER
 		do
 			input.set_nino_input (a_input)
 			output.set_nino_output (a_output)
@@ -62,6 +63,10 @@ feature -- Basic operation
 			if attached base as l_base and then attached env.item ("REQUEST_URI") as uri then
 				if uri.starts_with (l_base) then
 					l_path_info := uri.substring (l_base.count + 1, uri.count)
+					p := l_path_info.index_of ('?', 1)
+					if p > 0 then
+						l_path_info.keep_head (p - 1)
+					end
 					env.force (l_path_info, "PATH_INFO")
 					env.force (l_base, "SCRIPT_NAME")
 				end

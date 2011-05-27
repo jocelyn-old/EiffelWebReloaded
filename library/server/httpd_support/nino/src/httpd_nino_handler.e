@@ -41,7 +41,7 @@ feature -- Request processing
 			a_headers_map := a_handler.request_header_map
 			create e
 			vars := e.starting_environment_variables
-			create env.make (vars.count + 10)
+			env := vars.twin
 
 			p := l_request_uri.index_of ('?', 1)
 			if p > 0 then
@@ -105,16 +105,6 @@ feature -- Request processing
 			add_environment_variable (l_server_name, "SERVER_PORT", env)
 			add_environment_variable (a_handler.version, "SERVER_PROTOCOL", env)
 			add_environment_variable ({HTTP_SERVER_CONFIGURATION}.Server_details, "SERVER_SOFTWARE", env)
-
-			from
-				vars.start
-			until
-				vars.after
-			loop
-				env.put (vars.item_for_iteration, vars.key_for_iteration)
-				vars.forth
-			end
-
 
 			callback.process_request (env, a_handler.request_header, a_input, a_output)
 		end
