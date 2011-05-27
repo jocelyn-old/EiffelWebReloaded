@@ -35,11 +35,6 @@ feature -- Element change
 			-- Set `message' to `m'
 		do
 			message := m
-			if m /= Void then
-				headers.put_content_length (m.count)
-			else
-				headers.put_content_length (0)
-			end
 		end
 
 	append_message (m: attached like message)
@@ -78,11 +73,34 @@ feature -- Element change
 
 feature -- Output
 
+	update_content_length (a_overwrite: BOOLEAN)
+			-- Update content length
+			-- if the header already exists it won't change it,
+			-- unless `a_overwrite' is set to True
+		local
+			hds: like headers
+			len: INTEGER
+		do
+			hds := headers
+			if a_overwrite or else not hds.has_content_length then
+				if attached message as m then
+					len := m.count
+--					if {PLATFORM}.is_windows then
+--						len := len + m.occurrences ('%N') --| FIXME: find better solution
+--					end
+				else
+					len := 0
+				end
+				hds.put_content_length (len)
+			end
+		end
+
 	compute
 			-- Compute the string output
 		local
 			s: STRING
 		do
+			update_content_length (False)
 			create s.make_from_string (headers.string)
 			if attached message as m then
 				s.append_string (m)
