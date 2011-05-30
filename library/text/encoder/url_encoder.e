@@ -90,7 +90,7 @@ feature -- Decoder
 			pr: CELL [INTEGER]
 		do
 			n := v.count
-			create Result.make (n + n // 10)
+			create Result.make (n)
 			from i := 1
 			until i > n
 			loop
