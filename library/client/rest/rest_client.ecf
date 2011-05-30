@@ -12,6 +12,11 @@
 		</option>
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
 		<library name="curl" location="$ISE_LIBRARY\library\cURL\cURL-safe.ecf"/>
-		<cluster name="src" location=".\" recursive="true"/>
+		<cluster name="src" location=".\" recursive="true">
+			<file_rule>
+				<exclude>/net_rest_service_api.e$</exclude>
+				<exclude>/rest_http_protocol.e$</exclude>
+			</file_rule>
+		</cluster>
 	</target>
 </system>
