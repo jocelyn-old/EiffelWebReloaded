@@ -43,6 +43,11 @@ feature -- Basic operation
 			l_http_handler : HTTP_HANDLER
 		do
 			create {HTTPD_NINO_HANDLER} l_http_handler.make_with_callback (server, "HTTPD_NINO_HANDLER", Current)
+			debug ("nino")
+				if attached base as l_base then
+					print ("Base=" + l_base + "%N")
+				end
+			end
 			server.setup (l_http_handler)
 		end
 
