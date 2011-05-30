@@ -53,7 +53,6 @@ feature -- Request processing
 			end
 			if attached a_headers_map.item ("Host") as l_host then
 				add_environment_variable (l_host, "HTTP_HOST", env)
-
 				p := l_host.index_of (':', 1)
 				if p > 0 then
 					l_server_name := l_host.substring (1, p - 1)
@@ -102,7 +101,7 @@ feature -- Request processing
 
 			add_environment_variable (l_script_name, "SCRIPT_NAME", env)
 			add_environment_variable (l_server_name, "SERVER_NAME", env)
-			add_environment_variable (l_server_name, "SERVER_PORT", env)
+			add_environment_variable (l_server_port, "SERVER_PORT", env)
 			add_environment_variable (a_handler.version, "SERVER_PROTOCOL", env)
 			add_environment_variable ({HTTP_SERVER_CONFIGURATION}.Server_details, "SERVER_SOFTWARE", env)
 
