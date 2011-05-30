@@ -34,13 +34,6 @@ feature -- Access
 	parameters: LIST [attached like parameter]
 			-- Parameters information
 
-feature -- Access
-
-	output: HTTPD_SERVER_OUTPUT
-			-- Output
-		deferred
-		end
-
 feature -- Access: Format
 
 	supported_request_method_names: LIST [STRING]
@@ -151,7 +144,7 @@ feature -- Execution
 			create h.make
 			h.put_status ({HTTP_STATUS_CODE}.unauthorized)
 			h.put_header ("WWW-Authenticate: Basic realm=%"Eiffel auth%"")
-			output.put_string (h.string)
+			henv.output.put_string (h.string)
 			h.recycle
 		end
 

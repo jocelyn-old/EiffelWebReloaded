@@ -28,7 +28,7 @@ feature -- Basic operation
 	launch
 		do
 			request_count := request_count + 1
-			call_execute ((create {EXECUTION_ENVIRONMENT}).starting_environment_variables)
+			call_execute ((create {EXECUTION_ENVIRONMENT}).starting_environment_variables, input, output)
 		end
 
 feature -- Input/Output
@@ -39,18 +39,7 @@ feature -- Input/Output
 	output: HTTPD_SERVER_OUTPUT
 			-- Output to client
 
-feature -- Output
-
-	http_put_string (s: STRING)
-		do
-			output.put_string (s)
-		end
-
-	http_flush
-		do
-		end
-
-note
+;note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 	source: "[

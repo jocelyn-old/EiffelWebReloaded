@@ -15,17 +15,14 @@ create
 
 feature -- Initialization
 
-	make (act: like action; p: like path; o: like output)
+	make (act: like action; p: like path)
 		do
 			set_path (p)
 			action := act
-			output := o
 			initialize
 		end
 
 feature -- Access
-
-	output: HTTPD_SERVER_OUTPUT
 
 	action: PROCEDURE [ANY, TUPLE [env: REST_ENVIRONMENT; format: detachable STRING; args: detachable STRING]]
 

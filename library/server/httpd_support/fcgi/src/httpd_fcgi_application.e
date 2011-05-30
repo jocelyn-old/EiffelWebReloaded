@@ -36,7 +36,7 @@ feature -- Basic operation
 				res < 0
 			loop
 				request_count := request_count + 1
-				call_execute (fcgi.updated_environ_variables)
+				call_execute (fcgi.updated_environ_variables, input, output)
 --				fcgi.fcgi_finish
 				res := fcgi.fcgi_listen
 			end
@@ -49,17 +49,6 @@ feature -- Input/Output
 
 	output: HTTPD_SERVER_OUTPUT
 			-- Output to client (via httpd server/fcgi)
-
-feature -- Output
-
-	http_put_string (s: STRING)
-		do
-			fcgi.put_string (s)
-		end
-
-	http_flush
-		do
-		end
 
 feature {NONE} -- Implementation
 

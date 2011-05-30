@@ -15,10 +15,9 @@ create
 
 feature {NONE} -- Initialization
 
-	make (a_path: like path; a_count: INTEGER; a_output: like output)
+	make (a_path: like path; a_count: INTEGER)
 		do
 			path := a_path
-			output := a_output
 			description := "Request Group Handler"
 			create handlers.make (a_count)
 			initialize
@@ -28,9 +27,6 @@ feature -- Access
 
 	handlers: REST_REQUEST_HANDLER_MANAGER
 			-- Associated handlers
-
-	output: HTTPD_SERVER_OUTPUT
-			-- Httpd server output
 
 	authentication_required: BOOLEAN
 		do
@@ -73,7 +69,7 @@ feature -- Execution
 		do
 			create h.make
 			h.put_status ({HTTP_STATUS_CODE}.not_acceptable)
-			output.put_string (h.string)
+			henv.output.put_string (h.string)
 			h.recycle
 		end
 

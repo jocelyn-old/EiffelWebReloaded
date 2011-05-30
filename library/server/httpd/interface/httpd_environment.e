@@ -20,10 +20,11 @@ create {HTTPD_APPLICATION}
 
 feature {NONE} -- Initialization
 
-	make (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT)
+	make (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT)
 			-- Initialize Current with variable `a_vars' and `a_input'
 		do
 			input := a_input
+			output := a_output
 			create request_uri.make_empty
 			create request_method.make_empty
 			create path_info.make_empty
@@ -57,6 +58,25 @@ feature {NONE} -- Initialization
 			environment_variables.add_variable (dtu.unix_time_stamp (Void).out, "REQUEST_TIME")
 		end
 
+feature -- Access: Input/Output
+
+	output: HTTPD_SERVER_OUTPUT
+			-- Server output channel
+
+	input: HTTPD_SERVER_INPUT
+			-- Server input channel
+
+feature -- Error handling
+
+	has_error: BOOLEAN
+		do
+			Result := error_handler.has_error
+		end
+
+	error_handler: ERROR_HANDLER
+			-- Error handler
+			-- By default initialized to new handler			
+
 feature -- Recycle
 
 	recycle
@@ -89,17 +109,6 @@ feature -- Basic operation
 		do
 			extract_variables
 		end
-
-feature -- Error handling
-
-	has_error: BOOLEAN
-		do
-			Result := error_handler.has_error
-		end
-
-	error_handler: ERROR_HANDLER
-			-- Error handler
-			-- By default initialized to new handler
 
 feature -- Element change: Error handling
 
@@ -864,10 +873,7 @@ feature {NONE} -- Internal value
 	internal_cookies: detachable like cookies
 			-- cached value for `cookies'
 
-feature -- I/O
-
-	input: HTTPD_SERVER_INPUT
-			-- Server input channel
+feature {NONE} -- I/O: implementation
 
 	read_input (nb: INTEGER)
 			-- Read `nb' bytes from `input'

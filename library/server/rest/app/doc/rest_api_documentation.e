@@ -15,18 +15,15 @@ create
 
 feature {NONE} -- Initialization
 
-	make (a_path: STRING; a_output: like output; a_handler_manager: like handler_manager)
+	make (a_path: STRING; a_handler_manager: like handler_manager)
 		do
 			path := a_path
-			output := a_output
 			handler_manager := a_handler_manager
 			description := "Technical documention for the API"
 			initialize
 		end
 
 feature {NONE} -- Access: Implementation
-
-	output: HTTPD_SERVER_OUTPUT
 
 	handler_manager: REST_REQUEST_HANDLER_MANAGER
 
@@ -91,7 +88,7 @@ feature -- Execution
 			end
 			rep.set_body (s)
 			rep.compute
-			output.put_string (rep.string)
+			henv.output.put_string (rep.string)
 			rep.recycle
 		end
 

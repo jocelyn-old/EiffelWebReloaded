@@ -16,9 +16,6 @@ feature {NONE} -- Initialization
 	initialize
 		do
 			initialize_server
-
-			create {HTTPD_NINO_SERVER_INPUT} input.make_empty
-			create {HTTPD_NINO_SERVER_OUTPUT} output.make_empty
 		end
 
 	initialize_server
@@ -55,9 +52,6 @@ feature -- Basic operation
 			l_path_info: STRING
 			p: INTEGER
 		do
-			input.set_nino_input (a_input)
-			output.set_nino_output (a_output)
-
 			request_count := request_count + 1
 
 			if attached base as l_base and then attached env.item ("REQUEST_URI") as uri then
@@ -72,30 +66,12 @@ feature -- Basic operation
 				end
 			end
 
-			call_execute (env)
-
-			input.set_nino_input (Void)
-			output.set_nino_output (Void)
+			call_execute (env, create {HTTPD_NINO_SERVER_INPUT}.make (a_input), create {HTTPD_NINO_SERVER_OUTPUT}.make (a_output))
 		end
 
-feature -- Input/Output
+invariant
 
-	input: HTTPD_NINO_SERVER_INPUT
-			-- Input from client
-
-	output: HTTPD_NINO_SERVER_OUTPUT
-			-- Output to client
-
-feature -- Output
-
-	http_put_string (s: STRING)
-		do
-			output.put_string (s)
-		end
-
-	http_flush
-		do
-		end
+	server_attached: server /= Void
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"

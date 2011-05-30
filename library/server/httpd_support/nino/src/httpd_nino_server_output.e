@@ -12,18 +12,12 @@ inherit
 	HTTPD_SERVER_OUTPUT
 
 create
-	make,
-	make_empty
+	make
 
 feature {NONE} -- Initialization
 
-	make_empty
+	make (a_nino_output: like nino_output)
 		do
-		end
-
-	make (a_nino_output: attached like nino_output)
-		do
-			make_empty
 			set_nino_output (a_nino_output)
 		end
 
@@ -34,7 +28,7 @@ feature {HTTPD_NINO_APPLICATION} -- Nino
 			nino_output := o
 		end
 
-	nino_output: detachable HTTP_OUTPUT_STREAM
+	nino_output: HTTP_OUTPUT_STREAM
 
 feature -- Basic operation
 
@@ -44,9 +38,7 @@ feature -- Basic operation
 			debug ("nino")
 				print (s)
 			end
-			if attached nino_output as o then
-				o.put_string (s)
-			end
+			nino_output.put_string (s)
 		end
 
 note

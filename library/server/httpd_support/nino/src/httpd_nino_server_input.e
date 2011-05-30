@@ -12,19 +12,13 @@ inherit
 	HTTPD_SERVER_INPUT
 
 create
-	make,
-	make_empty
+	make
 
 feature {NONE} -- Initialization
 
-	make_empty
+	make (a_nino_input: like nino_input)
 		do
 			create last_string.make_empty
-		end
-
-	make (a_nino_input: attached like nino_input)
-		do
-			make_empty
 			set_nino_input (a_nino_input)
 		end
 
@@ -35,7 +29,7 @@ feature {HTTPD_NINO_APPLICATION} -- Nino
 			nino_input := i
 		end
 
-	nino_input: detachable HTTP_INPUT_STREAM
+	nino_input: HTTP_INPUT_STREAM
 
 feature -- Basic operation
 
@@ -44,12 +38,8 @@ feature -- Basic operation
 			-- or until end of file.
 			-- Make result available in `last_string'.	
 		do
-			if attached nino_input as i then
-				i.read_stream (nb_char)
-				last_string := i.last_string
-			else
-				last_string.wipe_out
-			end
+			nino_input.read_stream (nb_char)
+			last_string := nino_input.last_string
 		end
 
 feature -- Access		

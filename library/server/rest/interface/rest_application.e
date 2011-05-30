@@ -21,9 +21,9 @@ feature {NONE} -- Handlers
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]): REST_ENVIRONMENT
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_ENVIRONMENT
 		do
-			create Result.make (a_vars, input)
+			create Result.make (a_vars, a_input, a_output)
 			Result.environment_variables.add_variable (request_count.out, "REQUEST_COUNT")
 		end
 

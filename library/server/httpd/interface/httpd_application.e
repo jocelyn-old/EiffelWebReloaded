@@ -22,7 +22,7 @@ feature -- Basic operation
 
 feature -- Execution
 
-	call_execute (a_variables: HASH_TABLE [STRING, STRING])
+	call_execute (a_variables: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT)
 			-- Call execute
 			--| Note: you can redefine this feature, if you want to optimize
 			--| as much as possible a very simple query
@@ -33,7 +33,7 @@ feature -- Execution
 		do
 			if not rescued then
 				pre_execute
-				henv := new_environment (a_variables)
+				henv := new_environment (a_variables, a_input, a_output)
 				execute (henv)
 				post_execute (henv, Void)
 			else
@@ -64,77 +64,64 @@ feature -- Execution
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]): HTTPD_ENVIRONMENT
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): HTTPD_ENVIRONMENT
 			-- New httpd environment based on `a_vars' and `input'
 			--| note: you can redefine this function to create your own
 			--| descendant of HTTPD_ENVIRONMENT , or even to reuse/recycle existing
 			--| instance of HTTPD_ENVIRONMENT
 		do
-			create Result.make (a_vars, input)
-		end
-
-feature -- Input/Output
-
-	input: HTTPD_SERVER_INPUT
-			-- Input from client
-		deferred
-		ensure
-			result_attache: Result /= Void
-		end
-
-	output: HTTPD_SERVER_OUTPUT
-			-- Output to client
-		deferred
-		ensure
-			result_attache: Result /= Void
+			create Result.make (a_vars, a_input, a_output)
 		end
 
 feature -- Output
 
-	http_put_exception_trace
+	http_put_exception_trace (henv: like new_environment)
 			-- Print exception trace is any
 		do
 			if attached (create {EXCEPTIONS}).exception_trace as l_trace then
-				http_put_string ("Exception occurred%N")
-				http_put_string ("<pre>" + l_trace + "</pre>")
-				http_flush
+				http_put_string ("Exception occurred%N", henv)
+				http_put_string ("<pre>" + l_trace + "</pre>", henv)
+				http_flush (henv)
 			end
 		end
 
-	http_put_file_content (fn: STRING)
+	http_put_file_content (fn: STRING; henv: like new_environment)
 			-- Send the content of file `fn'
 		local
 			f: RAW_FILE
+			o: like {HTTPD_ENVIRONMENT}.output
 		do
 			create f.make (fn)
 			if f.exists and then f.is_readable then
+				o := henv.output
 				f.open_read
 				from
 				until
 					f.exhausted
 				loop
 					f.read_stream (1024)
-					http_put_string (f.last_string)
+					o.put_string (f.last_string)
 				end
 				f.close
 			end
 		end
 
-	http_put_header_line (s: STRING)
+	http_put_header_line (s: STRING; henv: like new_environment)
 			-- Send `s' to http client as header line
 		do
-			http_put_string (s)
-			http_put_string ("%R%N")
+			henv.output.put_header_line (s)
 		end
 
-	http_put_string (s: STRING)
+	http_put_string (s: STRING; henv: like new_environment)
 			-- Send `s' to http client
-		deferred
+		do
+			henv.output.put_string (s)
 		end
 
-	http_flush
+	http_flush (henv: like new_environment)
 			-- Flush the output to http client	
-		deferred
+		do
+			henv.output.flush
 		end
 
 note
