@@ -7,3 +7,6 @@
 [submodule "library/server/nino"]
 	path = library/server/nino
 	url = git://github.com/jocelyn/EiffelWebNino.git
+[submodule "wiki"]
+	path = wiki
+	url = git@github.com:EiffelSoftware/EiffelWebReloaded.wiki.git
