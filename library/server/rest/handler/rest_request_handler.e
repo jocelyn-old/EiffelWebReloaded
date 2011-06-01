@@ -125,16 +125,26 @@ feature -- Execution
 			-- Execute request handler	
 		local
 			l_format, l_args: detachable STRING
+			rescued: BOOLEAN
 		do
-			if attached execution_information (henv) as l_info then
-				l_format := l_info.format
-				l_args := l_info.arguments
-			end
-			if authentication_required and then not henv.authenticated then
-				execute_unauthorized (henv, l_format, l_args)
+			if not rescued then
+				if attached execution_information (henv) as l_info then
+					l_format := l_info.format
+					l_args := l_info.arguments
+				end
+				pre_execute (henv)
+				if authentication_required and then not henv.authenticated then
+					execute_unauthorized (henv, l_format, l_args)
+				else
+					execute_application (henv, l_format, l_args)
+				end
+				post_execute (henv)
 			else
-				execute_application (henv, l_format, l_args)
+				post_execute (henv)
 			end
+		rescue
+			rescued := True
+			retry
 		end
 
 	execute_unauthorized (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
@@ -151,6 +161,18 @@ feature -- Execution
 	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 			-- Execute request handler with `a_format' ad `a_args'
 		deferred
+		end
+
+	pre_execute (henv: REST_ENVIRONMENT)
+			-- Operation processed before `execute'
+		do
+			--| To be redefined if needed
+		end
+
+	post_execute (henv: REST_ENVIRONMENT)
+			-- Operation processed after `execute'
+		do
+			--| To be redefined if needed
 		end
 
 feature -- Execution: report
