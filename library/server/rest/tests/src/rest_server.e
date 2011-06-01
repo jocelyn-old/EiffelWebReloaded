@@ -41,9 +41,9 @@ feature {NONE} -- Initialization
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]): REST_SERVER_ENVIRONMENT
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_SERVER_ENVIRONMENT
 		do
-			create Result.make (a_vars, input)
+			create Result.make (a_vars, a_input, a_output)
 			Result.environment_variables.add_variable (request_count.out, "REQUEST_COUNT")
 		end
 
@@ -55,12 +55,12 @@ feature {NONE} -- Handlers
 		local
 			h: REST_REQUEST_HANDLER
 		do
-			m.register (create {APP_API_DOCUMENTATION}.make ("/doc", output, handler_manager))
-			m.register (create {APP_ACCOUNT_VERIFY_CREDENTIAL}.make ("/account/verify_credentials", output))
-			m.register (create {APP_TEST}.make ("test", output))
-			m.register (create {APP_DEBUG_LOG}.make ("/debug/log", output))
+			m.register (create {APP_API_DOCUMENTATION}.make ("/doc", handler_manager))
+			m.register (create {APP_ACCOUNT_VERIFY_CREDENTIAL}.make ("/account/verify_credentials"))
+			m.register (create {APP_TEST}.make ("test"))
+			m.register (create {APP_DEBUG_LOG}.make ("/debug/log"))
 
-			create {REST_REQUEST_AGENT_HANDLER} h.make (agent execute_exit_application, "/debug/exit", output)
+			create {REST_REQUEST_AGENT_HANDLER} h.make (agent execute_exit_application, "/debug/exit")
 			h.set_description ("tell the REST server to exit (in FCGI context, this is used to reload the FCGI server)")
 			h.enable_request_method_get
 			h.enable_format_text

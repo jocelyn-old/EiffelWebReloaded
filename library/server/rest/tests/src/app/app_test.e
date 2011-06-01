@@ -17,10 +17,9 @@ create
 
 feature {NONE} -- Initialization
 
-	make (a_path: STRING; a_output: like output)
+	make (a_path: STRING)
 		do
 			path := a_path
-			output := a_output
 			description := "Return a simple test output "
 			initialize
 		end
@@ -31,10 +30,6 @@ feature {NONE} -- Initialization
 			enable_request_method_get
 			enable_format_text
 		end
-
-feature {NONE} -- Access: Implementation
-
-	output: HTTPD_SERVER_OUTPUT
 
 feature -- Access
 
@@ -76,7 +71,7 @@ feature -- Execution
 			end
 			rep.set_message (s)
 			rep.compute
-			output.put_string (rep.string)
+			henv.output.put_string (rep.string)
 			rep.recycle
 		end
 

@@ -18,10 +18,9 @@ create
 
 feature {NONE} -- Initialization
 
-	make (a_path: STRING; a_output: like output)
+	make (a_path: STRING)
 		do
 			path := a_path
-			output := a_output
 			description := "Logs "
 			initialize
 		end
@@ -32,10 +31,6 @@ feature {NONE} -- Initialization
 			enable_request_method_get
 			enable_format_text
 		end
-
-feature {NONE} -- Access: Implementation
-
-	output: HTTPD_SERVER_OUTPUT
 
 feature -- Access
 
@@ -78,19 +73,19 @@ feature -- Execution
 					s.append_string (" not a file log%N")
 				end
 				h.put_content_length (s.count)
-				output.put_string (h.string)
+				henv.output.put_string (h.string)
 			else
 				if attached {FILE_LOGGER} sh_logger.logger as l_file_logger then
 					s.append_string ("%N-----------------------------------%N")
 					s.append_string (l_file_logger.name)
 					s.append_string ("-----------------------------------%N")
 					h.put_content_length (s.count + l_file_logger.log_size)
-					output.put_string (h.string)
-					output.put_file_content (l_file_logger.name)
+					henv.output.put_string (h.string)
+					henv.output.put_file_content (l_file_logger.name)
 				else
 					s.append_string ("none%N")
 					h.put_content_length (s.count)
-					output.put_string (h.string)
+					henv.output.put_string (h.string)
 				end
 			end
 
