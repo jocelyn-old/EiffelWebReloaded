@@ -11,9 +11,9 @@ class
 inherit
 	LOGGER
 
-feature -- Access
+feature {NONE} -- Logging
 
-	log (a_level: INTEGER; m: STRING)
+	execute_log (m: STRING)
 		do
 			io.put_string (m)
 			io.put_string ("%N")

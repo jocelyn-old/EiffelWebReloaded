@@ -10,13 +10,54 @@ deferred class
 
 feature -- Access
 
-	log (a_level: INTEGER; m: STRING)
+	application_name: detachable STRING
+			-- Optional application name.
+			-- Mainly used when log is shared between several application.
+
+	logging_level: INTEGER
+			-- Logging level
+			-- log will be executed only when the parameter `a_level' is equal or bigger than `logging_level'
+			--| When it is negative the logging is disabled
+
+feature -- Element change
+
+	set_application_name (n: like application_name)
+			-- Set `application_name' to 'n'
+		do
+			application_name := n
+		end
+
+	set_logging_level (lev: like logging_level)
+			-- Set `logging_level' to `lev'
+		do
+			logging_level := lev
+		end
+
+feature {NONE} -- Logging
+
+	execute_log (m: STRING)
+			-- Execute the logging of `m'
 		deferred
+		end
+
+feature -- Logging
+
+	log (a_level: INTEGER; m: STRING)
+		do
+			if logging_level >= 0 and then a_level >= logging_level then
+				if attached application_name as n then
+					execute_log ("[" + n + "]" + m)
+				else
+					execute_log (m)
+				end
+			end
 		end
 
 	logf (a_level: INTEGER; fmt: STRING; args: ARRAY [detachable ANY])
 			-- Log message formatted with arguments
 			-- replace $1 with first value from args ... and so on
+		require
+			a_level_positive: a_level >= 0
 		local
 			s,num: STRING
 			i,j,n,low: INTEGER

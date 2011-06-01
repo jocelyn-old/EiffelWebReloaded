@@ -34,19 +34,9 @@ feature {NONE} -- Initialization
 
 	file: detachable FILE
 
-feature -- Access
+feature {NONE} -- Logging
 
-	name: STRING
-
-	log_size: INTEGER
-		local
-			f: FILE
-		do
-			create {RAW_FILE} f.make (name)
-			Result := f.count
-		end
-
-	log (a_level: INTEGER; m: STRING)
+	execute_log (m: STRING)
 		local
 			f: like file
 			b: BOOLEAN
@@ -62,6 +52,19 @@ feature -- Access
 			if b then
 				f.close
 			end
+		end
+
+
+feature -- Access
+
+	name: STRING
+
+	log_size: INTEGER
+		local
+			f: FILE
+		do
+			create {RAW_FILE} f.make (name)
+			Result := f.count
 		end
 
 	close
