@@ -72,12 +72,18 @@ feature {NONE} -- Initialization
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_SERVER_ENVIRONMENT
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_ENVIRONMENT
 		do
 			create Result.make (a_vars, a_input, a_output)
+			
 				--| At this point, you can decided to add your own environment variable
 				--| this is a convenient way to share a value
 			Result.environment_variables.add_variable (request_count.out, "REQUEST_COUNT")
+
+				--| Precise our own authentication system
+			Result.authentication := create {REST_SERVER_AUTHENTICATION}
+
+				--| Note that you can also create your own REST_ENVIRONMENT with specific features
 		end
 
 feature {NONE} -- Handlers		

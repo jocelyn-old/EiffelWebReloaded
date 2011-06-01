@@ -39,38 +39,93 @@ feature -- Execution
 
 	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local
-			rep: REST_RESPONSE
+			rep: detachable REST_RESPONSE
 			s: STRING
+			ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL]
 		do
-			create rep.make (path)
-			rep.headers.put_content_type_text_html
-			create s.make_empty
-			s.append_string ("test")
-			if attached henv.environment_variable ("REQUEST_COUNT") as l_request_count then
-				s.append_string ("(request_count="+ l_request_count +")<br/>%N")
-			end
-
 			if a_args /= Void and then not a_args.is_empty then
-				s.append_string (" arguments=" + a_args)
 				if a_args.same_string ("crash") then
+					rep := Void
 					(create {DEVELOPER_EXCEPTION}).raise
 				elseif a_args.starts_with ("env") then
-					s.append_string ("%N%NAll variables:")
-					s.append (string_hash_table_string_string (henv.variables.new_cursor))
-					s.append_string ("<br/>script_url(%"" + henv.path_info + "%")=" + henv.script_url (henv.path_info) + "%N")
-					if attached henv.http_authorization_login_password as t then
-						s.append_string ("Check login=" + t.login + "<br/>%N")
+					create rep.make (path)
+					create s.make_empty
+					ht := henv.variables.new_cursor
+					if a_format = Void or else a_format.same_string ("html") then
+						rep.headers.put_content_type_text_html
+						from
+							ht.start
+						until
+							ht.after
+						loop
+							s.append_string ("<li><strong>" + ht.key.as_string_8 + "</strong> = " + ht.item.as_string_8 + "</li>%N")
+							ht.forth
+						end
+					elseif a_format.same_string ("json") then
+						rep.headers.put_content_type_application_json
+						s.append ("{ %"application%": %""+ path +"%" ")
+						from
+							ht.start
+						until
+							ht.after
+						loop
+							s.append_string (",%"" + ht.key.as_string_8 + "%": %"" + ht.item.as_string_8 + "%"%N")
+							ht.forth
+						end
+						s.append ("}%N")
+					elseif a_format.same_string ("xml") then
+						rep.headers.put_content_type_text_xml
+						s.append ("<application name=%""+ path +"%">")
+						from
+							ht.start
+						until
+							ht.after
+						loop
+							s.append_string ("<variable name=%"" + ht.key.as_string_8 + "%">" + ht.item.as_string_8 + "</variable>%N")
+							ht.forth
+						end
+						s.append ("</application>%N")
+					else
+						rep.headers.put_content_type_text_plain
+						from
+							ht.start
+						until
+							ht.after
+						loop
+							s.append_string (ht.key.as_string_8 + " = " + ht.item.as_string_8 + "%N")
+							ht.forth
+						end
 					end
-					if henv.authenticated and then attached henv.authenticated_login as l_login then
-						s.append_string ("Authenticated: login=" + l_login.as_string_8 + "<br/>%N")
-					end
+					rep.set_message (s)
+				else
 				end
-			else
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + "/env") + "%">/env</a> to display all variables <br/>%N")
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + "/crash") + "%">/crash</a> to demonstrate exception trace <br/>%N")
 			end
-			rep.set_message (s)
-			rep.compute
+			if rep = Void then
+				create rep.make (path)
+				rep.headers.put_content_type_text_html
+				create s.make_empty
+				s.append_string ("test")
+				if attached henv.environment_variable ("REQUEST_COUNT") as l_request_count then
+					s.append_string ("(request_count="+ l_request_count +")<br/>%N")
+				end
+				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + "/env") + "%">/test/env</a> to display all variables <br/>%N")
+				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + ".json/env") + "%">/test.json/env</a> to display all variables in JSON <br/>%N")
+				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + ".json/env") + "%">/test.xml/env</a> to display all variables in XML <br/>%N")
+				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + ".json/env") + "%">/test.html/env</a> to display all variables in HTML<br/>%N")
+				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + "/crash") + "%">/crash</a> to demonstrate exception trace <br/>%N")
+
+				if attached henv.http_authorization_login_password as t then
+					s.append_string ("Check login=" + t.login + "<br/>%N")
+				end
+				if henv.authenticated and then attached henv.authenticated_login as l_login then
+					s.append_string ("Authenticated: login=" + l_login.as_string_8 + "<br/>%N")
+				end
+
+				s.append_string ("<br/>script_url(%"" + henv.path_info + "%")=" + henv.script_url (henv.path_info) + "%N")
+
+				rep.set_message (s)
+			end
+
 			henv.output.put_string (rep.string)
 			rep.recycle
 		end
