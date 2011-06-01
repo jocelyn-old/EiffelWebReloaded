@@ -41,9 +41,9 @@ feature {NONE} -- Initialization
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]): REST_SERVER_ENVIRONMENT
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_SERVER_ENVIRONMENT
 		do
-			create Result.make (a_vars, input)
+			create Result.make (a_vars, a_input, a_output)
 			Result.environment_variables.add_variable (request_count.out, "REQUEST_COUNT")
 		end
 
@@ -55,12 +55,12 @@ feature {NONE} -- Handlers
 		local
 			h: REST_REQUEST_HANDLER
 		do
-			m.register (create {APP_API_DOCUMENTATION}.make ("/doc", output, handler_manager))
-			m.register (create {APP_ACCOUNT_VERIFY_CREDENTIAL}.make ("/account/verify_credentials", output))
-			m.register (create {APP_TEST}.make ("test", output))
-			m.register (create {APP_DEBUG_LOG}.make ("/debug/log", output))
+			m.register (create {APP_API_DOCUMENTATION}.make ("/doc", handler_manager))
+			m.register (create {APP_ACCOUNT_VERIFY_CREDENTIAL}.make ("/account/verify_credentials"))
+			m.register (create {APP_TEST}.make ("test"))
+			m.register (create {APP_DEBUG_LOG}.make ("/debug/log"))
 
-			create {REST_REQUEST_AGENT_HANDLER} h.make (agent execute_exit_application, "/debug/exit", output)
+			create {REST_REQUEST_AGENT_HANDLER} h.make (agent execute_exit_application, "/debug/exit")
 			h.set_description ("tell the REST server to exit (in FCGI context, this is used to reload the FCGI server)")
 			h.enable_request_method_get
 			h.enable_format_text
@@ -90,8 +90,8 @@ feature -- Execution
 			s := "Request [" + henv.path_info + "] is not available. <br/>%N";
 			s.append ("You are being redirected to <a href=%"" + henv.script_url ("/doc") + "%">/doc</a> in 2 seconds ...%N")
 			h.put_content_length (s.count)
-			output.put_string (h.string)
-			output.put_string (s)
+			henv.output.put_string (h.string)
+			henv.output.put_string (s)
 		end
 
 	execute_rescue (henv: like new_environment)
@@ -109,11 +109,11 @@ feature -- Implementation
 		do
 			create h.make
 			h.put_content_type_text_plain
-			output.put_string (h.string)
-			output.put_string ("Error occurred .. rq="+ request_count.out +"%N")
+			henv.output.put_string (h.string)
+			henv.output.put_string ("Error occurred .. rq="+ request_count.out +"%N")
 
 			if attached (create {EXCEPTIONS}).exception_trace as l_trace then
-				output.put_string ("<pre>" + l_trace + "</pre>")
+				henv.output.put_string ("<pre>" + l_trace + "</pre>")
 			end
 			h.recycle
 			exit_with_code (-1)
@@ -130,7 +130,7 @@ feature -- Implementation
 			s.append_string ("Exited")
 			s.append_string (" <a href=%"" + henv.script_url ("/") + "%">start again</a>%N")
 			rep.set_message (s)
-			output.put_string (rep.string)
+			henv.output.put_string (rep.string)
 			rep.recycle
 			exit_with_code (0)
 		end

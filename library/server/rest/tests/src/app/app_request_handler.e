@@ -9,14 +9,6 @@ deferred class
 inherit
 	REST_REQUEST_HANDLER
 
-feature {NONE} -- Initialization
-
-feature -- Access
-
-	output: HTTPD_SERVER_OUTPUT
-		deferred
-		end
-
 feature -- Basic operation
 
 	process_error (henv: REST_ENVIRONMENT; m: STRING; a_format_name: detachable STRING)
@@ -30,7 +22,7 @@ feature -- Basic operation
 			create s.make_empty
 			s.append_string ("Error: " + m)
 			rep.set_message (s)
-			output.put_string (rep.string)
+			henv.output.put_string (rep.string)
 			rep.recycle
 		end
 

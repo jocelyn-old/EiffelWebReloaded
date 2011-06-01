@@ -12,17 +12,14 @@ inherit
 			initialize
 		end
 
-
-
 create
 	make
 
 feature {NONE} -- Initialization
 
-	make (a_path: STRING; a_output: like output)
+	make (a_path: STRING)
 		do
 			path := a_path
-			output := a_output
 			description := "Verify credentials"
 			initialize
 		end
@@ -35,10 +32,6 @@ feature {NONE} -- Initialization
 			enable_format_xml
 			enable_format_text
 		end
-
-feature {NONE} -- Access: Implementation
-
-	output: HTTPD_SERVER_OUTPUT
 
 feature -- Access
 
@@ -74,7 +67,7 @@ feature -- Execution
 					end
 					if not s.is_empty then
 						rep.set_message (s)
-						output.put_string (rep.string)
+						henv.output.put_string (rep.string)
 					end
 					rep.recycle
 				else

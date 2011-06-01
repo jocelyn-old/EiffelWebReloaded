@@ -31,4 +31,12 @@
 		<cluster name="src" location=".\src\"/>
 		<cluster name="app" location=".\src\app\" recursive="true"/>
 	</target>
+	<target name="sample_nino" extends="common">
+		<root class="REST_SERVER" feature="make"/>
+		<setting name="executable_name" value="sample"/>
+		<library name="httpd_nino" location="..\..\httpd_support\nino\httpd_nino.ecf" readonly="false"/>
+		<cluster name="support" location=".\src\httpd\nino\" recursive="true"/>
+		<cluster name="src" location=".\src\"/>
+		<cluster name="app" location=".\src\app\" recursive="true"/>
+	</target>
 </system>
