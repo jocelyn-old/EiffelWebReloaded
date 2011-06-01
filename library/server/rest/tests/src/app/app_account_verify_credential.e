@@ -9,7 +9,8 @@ class
 inherit
 	APP_REQUEST_HANDLER
 		redefine
-			initialize
+			initialize,
+			execute_unauthorized
 		end
 
 create
@@ -38,6 +39,17 @@ feature -- Access
 	authentication_required: BOOLEAN = True
 
 feature -- Execution
+
+	execute_unauthorized (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+		local
+			h: HTTPD_HEADER
+		do
+			create h.make
+			h.put_status ({HTTP_STATUS_CODE}.unauthorized)
+			h.put_header ("WWW-Authenticate: Basic realm=%"My Silly demo auth, password must be the same as login such as foo:foo%"")
+			henv.output.put_string (h.string)
+			h.recycle
+		end
 
 	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local

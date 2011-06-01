@@ -13,7 +13,7 @@ feature -- Access
 		do
 			Precursor
 			base := ""
-			server.configuration.http_server_port := 80
+			server.configuration.http_server_port := 8080
 			server.configuration.force_single_threaded := True
 		end
 
