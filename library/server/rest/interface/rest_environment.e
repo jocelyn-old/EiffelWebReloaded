@@ -51,8 +51,14 @@ feature -- Basic operation
 
 feature -- Authentication
 
-	authentication: detachable HTTPD_AUTHENTICATION
-			-- Optional authentication system	
+	authentication: detachable HTTPD_AUTHENTICATION assign set_authentication
+		-- Optional authentication system	
+
+	set_authentication (auth: like authentication)
+			-- Set `authentication' to `auth'
+		do
+			authentication := auth
+		end
 
 feature -- Authentication report
 
