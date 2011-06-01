@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<system xmlns="http://www.eiffel.com/developers/xml/configuration-1-8-0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eiffel.com/developers/xml/configuration-1-8-0 http://www.eiffel.com/developers/xml/configuration-1-8-0.xsd" name="rest_server" uuid="797E5087-731C-4BAA-808D-019C96881F52">
+	<target name="rest_server">
+		<root class="REST_SERVER" feature="make"/>
+		<setting name="executable_name" value="sample"/>
+		<file_rule>
+			<exclude>/EIFGENs$</exclude>
+			<exclude>/\.git$</exclude>
+			<exclude>/\.svn$</exclude>
+		</file_rule>
+		<option cat_call_detection="false" is_attached_by_default="true" void_safety="all" syntax="provisional">
+		</option>
+		<setting name="console_application" value="true"/>
+		<setting name="concurrency" value="thread"/>
+		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
+		<library name="logger" location="..\..\library\logger\logger.ecf" readonly="false"/>
+		<library name="rest" location="..\..\library\server\rest\rest.ecf" readonly="false"/>
+		<library name="httpd" location="..\..\library\server\httpd\httpd.ecf" readonly="false"/>
+		<library name="httpd_nino" location="..\..\library\server\httpd_support\nino\httpd_nino.ecf" readonly="false"/>
+		<cluster name="src" location=".\src\"/>
+		<cluster name="app" location=".\src\app\" recursive="true"/>
+	</target>
+</system>
