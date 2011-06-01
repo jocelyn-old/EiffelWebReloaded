@@ -43,7 +43,7 @@ feature -- Basic operation
 			errors.force (a_error)
 		end
 
-	add_custom_error (a_code: INTEGER; a_name: STRING; a_message: detachable STRING_32)
+	add_error_details, add_custom_error (a_code: INTEGER; a_name: STRING; a_message: detachable STRING_32)
 			-- Add custom error to the stack of error
 		local
 			e: ERROR_CUSTOM
@@ -74,7 +74,7 @@ feature -- Element changes
 			end
 		end
 
-	wipe_out
+	reset, wipe_out
 		do
 			errors.wipe_out
 		end

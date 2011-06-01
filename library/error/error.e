@@ -30,6 +30,23 @@ feature -- Access
 	parent: detachable ERROR
 			-- Eventual error prior to Current
 
+feature -- String representation
+
+	string_representation: STRING_32
+			-- String representation for Current
+		do
+			create Result.make_from_string (name.as_string_32)
+			Result.append_character (' ')
+			Result.append_character ('(')
+			Result.append_integer (code)
+			Result.append_character (')')
+			if attached message as m then
+				Result.append_character (':')
+				Result.append_character (' ')
+				Result.append_string (m)
+			end
+		end
+
 feature -- Change
 
 	set_parent (a_parent: like parent)

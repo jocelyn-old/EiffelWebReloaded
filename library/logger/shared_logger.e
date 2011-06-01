@@ -16,7 +16,7 @@ feature -- Access
 		end
 
 	logger_cell: CELL [LOGGER]
-		once
+		once ("PROCESS")
 			create Result.put (create {CONSOLE_LOGGER})
 		end
 
