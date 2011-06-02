@@ -35,9 +35,9 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]): APPLICATION_ENVIRONMENT
+	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): APPLICATION_ENVIRONMENT
 		do
-			create Result.make (a_vars, input)
+			create Result.make (a_vars, a_input, a_output)
 		end
 
 feature -- Execution
@@ -122,7 +122,7 @@ feature -- Execution
 			s.append_string ("PATH_INFO=" + henv.path_info + "<br/>%N")
 			h.body_main := s
 			h.compute
-			http_put_string (h.string)
+			http_put_string (h.string, henv)
 			h.recycle
 		end
 
@@ -136,7 +136,7 @@ feature -- Execution
 				create hd.make
 				hd.put_status (401)
 				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
-				http_put_string (hd.string)
+				http_put_string (hd.string, henv)
 				hd.recycle
 			else
 				create h.make ("Login ...")
@@ -148,7 +148,7 @@ feature -- Execution
 				h.body_menu := html_menu (henv)
 				h.body_main.append ("Hello " + henv.authenticated_login + "%N")
 				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
-				http_put_string (h.string)
+				http_put_string (h.string, henv)
 				h.recycle
 			end
 		end
@@ -165,7 +165,7 @@ feature -- Execution
 				hd.put_cookie ("uuid", "", Void, Void, Void, Void)
 				hd.put_cookie ("auth", "logout", Void, Void, Void, Void)
 				hd.put_cookie ("user", "", Void, Void, Void, Void)
-				http_put_string (hd.string)
+				http_put_string (hd.string, henv)
 				hd.recycle
 			else
 				create h.make ("Logout ...")
@@ -176,7 +176,7 @@ feature -- Execution
 				h.body_menu := html_menu (henv)
 				h.body_main.append ("Bye " + henv.authenticated_login + "%N")
 				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
-				http_put_string (h.string)
+				http_put_string (h.string, henv)
 				h.recycle
 			end
 		end
@@ -239,7 +239,7 @@ feature -- Execution
 				hd.put_status (401)
 				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
 				hd.put_redirection (henv.script_url ("/login"), 0)
-				http_put_string (hd.string)
+				http_put_string (hd.string, henv)
 				hd.recycle
 			else
 				create h.make ("FCGI Eiffel Application - Private")
@@ -255,7 +255,7 @@ feature -- Execution
 				s.append ("All var:%N" + string_hash_table_string_string (henv.variables.new_cursor))
 				s.append ("Cookies:%N" + string_hash_table_string_string (henv.cookies_variables.new_cursor))
 				h.body_main.append (s)
-				http_put_string (h.string)
+				http_put_string (h.string, henv)
 				h.recycle
 			end
 		end
@@ -280,28 +280,28 @@ feature -- Execution
 					create {HTTPD_FILE_RESPONSE} r.make (l_file)
 					r.send (output)
 				else
-					http_put_string (header ("FCGI Eiffel Application - File"))
-					http_put_string (footer)
+					http_put_string (header ("FCGI Eiffel Application - File"), henv)
+					http_put_string (footer, henv)
 				end
 			end
 		end
 
 	execute_exit_application (henv: like new_environment)
 		do
-			http_put_string (header ("FCGI Eiffel Application - Bye bye"))
-			http_put_string (html_menu (henv))
-			http_put_string ("<h1>Eiffel Web Application - bye bye (request count="+request_count.out+")</h1>")
-			http_put_string (footer)
-			http_flush;
+			http_put_string (header ("FCGI Eiffel Application - Bye bye"), henv)
+			http_put_string (html_menu (henv), henv)
+			http_put_string ("<h1>Eiffel Web Application - bye bye (request count="+request_count.out+")</h1>", henv)
+			http_put_string (footer, henv)
+			http_flush (henv);
 			(create {EXCEPTIONS}).die (0)
 		end
 
 	execute_help_application (henv: like new_environment)
 		do
-			http_put_string (header ("FCGI Eiffel Application - Help"))
-			http_put_string (html_menu (henv))
-			http_put_string ("<h1>Help ...</h1>")
-			http_put_string (footer)
+			http_put_string (header ("FCGI Eiffel Application - Help"), henv)
+			http_put_string (html_menu (henv), henv)
+			http_put_string ("<h1>Help ...</h1>", henv)
+			http_put_string (footer, henv)
 		end
 
 	execute_test_application (henv: like new_environment)
@@ -309,64 +309,64 @@ feature -- Execution
 			rqst_uri: detachable STRING
 			n: INTEGER
 		do
-			http_put_string (header ("FCGI Eiffel Application"))
-			http_put_string (html_menu (henv))
+			http_put_string (header ("FCGI Eiffel Application"), henv)
+			http_put_string (html_menu (henv), henv)
 			if henv.has_error then
-				http_put_string ("<div>ERROR occurred%N")
-				print_errors (henv.error_handler)
-				http_put_string ("</div>")
+				http_put_string ("<div>ERROR occurred%N", henv)
+				print_errors (henv.error_handler, henv)
+				http_put_string ("</div>", henv)
 			end
 			rqst_uri := henv.request_uri
 			if rqst_uri /= Void then
 				if attached henv.request_method as l_rqst_method then
 					if l_rqst_method.is_case_insensitive_equal ("GET") then
-						http_put_string ("<div>Method: GET")
-						http_put_string ("<form id=%"sample_form_1%" name=%"sample_form_1%" action=%"" + rqst_uri + "%" method=%"POST%">%N")
-						http_put_string ("<input type=%"text%" name=%"fd_text%" value=%"TEXT%">%N")
-						http_put_string ("<input type=%"text%" name=%"fd_text2%" value=%"TEXT2%">%N")
-						http_put_string ("<input type=%"text%" name=%"fd_text3%" value=%"TEXT3%">%N")
-						http_put_string ("<input type=%"text%" name=%"fd_text4%" value=%"TEXT4%">%N")
-						http_put_string ("<input type=%"text%" name=%"a.b1%" value=%"A.B1%">%N")
-						http_put_string ("<input type=%"text%" name=%"a.b2%" value=%"A.B2%">%N")
-						http_put_string ("<input type=%"text%" name=%"a.b3%" value=%"A.B3%">%N")
-						http_put_string ("<input type=%"text%" name=%"z[a]%" value=%"Z[A]%">%N")
-						http_put_string ("<input type=%"text%" name=%"z[b]%" value=%"Z[B]%">%N")
-						http_put_string ("<input type=%"text%" name=%"z[c]%" value=%"Z[C]%">%N")
+						http_put_string ("<div>Method: GET", henv)
+						http_put_string ("<form id=%"sample_form_1%" name=%"sample_form_1%" action=%"" + rqst_uri + "%" method=%"POST%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"fd_text%" value=%"TEXT%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"fd_text2%" value=%"TEXT2%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"fd_text3%" value=%"TEXT3%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"fd_text4%" value=%"TEXT4%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"a.b1%" value=%"A.B1%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"a.b2%" value=%"A.B2%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"a.b3%" value=%"A.B3%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"z[a]%" value=%"Z[A]%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"z[b]%" value=%"Z[B]%">%N", henv)
+						http_put_string ("<input type=%"text%" name=%"z[c]%" value=%"Z[C]%">%N", henv)
 
-						http_put_string ("<input type=%"reset%" name=%"fd_cancel%" value=%"Cancel%">%N")
-						http_put_string ("<input type=%"submit%" name=%"fd_submit%" value=%"Validate%">%N")
-						http_put_string ("</form>%N")
-						http_put_string ("</div>%N")
+						http_put_string ("<input type=%"reset%" name=%"fd_cancel%" value=%"Cancel%">%N", henv)
+						http_put_string ("<input type=%"submit%" name=%"fd_submit%" value=%"Validate%">%N", henv)
+						http_put_string ("</form>%N", henv)
+						http_put_string ("</div>%N", henv)
 					elseif l_rqst_method.is_case_insensitive_equal ("POST") then
-						http_put_string ("<div>Method: POST")
-						http_put_string ("<li>type=" + variable ("CONTENT_TYPE", henv.content_type) + "</li>%N")
-						http_put_string ("<li>length=" + henv.content_length.out + "</li>%N")
+						http_put_string ("<div>Method: POST", henv)
+						http_put_string ("<li>type=" + variable ("CONTENT_TYPE", henv.content_type) + "</li>%N", henv)
+						http_put_string ("<li>length=" + henv.content_length.out + "</li>%N", henv)
 						if
 							henv.content_length > 0
 						then
-							print_hash_table_string_string (henv.variables_post.new_cursor)
---							http_put_string ("content=[")
+							print_hash_table_string_string (henv.variables_post.new_cursor, henv)
+--							http_put_string ("content=[", henv)
 --							fcgi.read_from_stdin (henv.content_length)
---							http_put_string (fcgi.buffer_contents)
---							http_put_string ("]")
+--							http_put_string (fcgi.buffer_contents, henv)
+--							http_put_string ("]", henv)
 						end
-						http_put_string ("</div>%N")
+						http_put_string ("</div>%N", henv)
 					elseif l_rqst_method.is_case_insensitive_equal ("PUT") then
-						http_put_string ("<h1>Method: " + l_rqst_method + "</h1>%N")
+						http_put_string ("<h1>Method: " + l_rqst_method + "</h1>%N", henv)
 					elseif l_rqst_method.is_case_insensitive_equal ("DELETE") then
-						http_put_string ("<h1>Method: " + l_rqst_method + "</h1>%N")
+						http_put_string ("<h1>Method: " + l_rqst_method + "</h1>%N", henv)
 					end
 
-					http_put_string ("<div>%N")
-					http_put_string ("<form id=%"sample_form_2%" name=%"sample_form_2%" action=%"" + rqst_uri + "%" method=%"POST%">%N")
-					http_put_string ("<input type=%"text%" name=%"fd_text%">%N")
-					http_put_string ("<input type=%"reset%" name=%"fd_cancel%" value=%"Cancel%">%N")
-					http_put_string ("<input type=%"submit%" name=%"fd_submit%" value=%"GO%">%N")
-					http_put_string ("</form>%N")
+					http_put_string ("<div>%N", henv)
+					http_put_string ("<form id=%"sample_form_2%" name=%"sample_form_2%" action=%"" + rqst_uri + "%" method=%"POST%">%N", henv)
+					http_put_string ("<input type=%"text%" name=%"fd_text%">%N", henv)
+					http_put_string ("<input type=%"reset%" name=%"fd_cancel%" value=%"Cancel%">%N", henv)
+					http_put_string ("<input type=%"submit%" name=%"fd_submit%" value=%"GO%">%N", henv)
+					http_put_string ("</form>%N", henv)
 
-					http_put_string ("</div>%N")
+					http_put_string ("</div>%N", henv)
 
-					http_put_string("<div><form action=%"" + rqst_uri + "%" enctype=%"multipart/form-data%" method=%"POST%">%N")
+					http_put_string ("<div><form action=%"" + rqst_uri + "%" enctype=%"multipart/form-data%" method=%"POST%">%N", henv)
 					http_put_string("[
 										<p>
 											Type some text (if you like):<br>
@@ -377,68 +377,68 @@ feature -- Execution
 										<input type="file" name="datafile" size="40">
 										</p>
 										<div><input type="submit" value="Send"></div></form>
-							]")
+							]", henv)
 				end
 			end
 
-			http_put_string ("<h1>Hello FCGI Eiffel Application</h1>%N")
-			http_put_string ("Request number " + request_count.out + "<br/>%N")
+			http_put_string ("<h1>Hello FCGI Eiffel Application</h1>%N", henv)
+			http_put_string ("Request number " + request_count.out + "<br/>%N", henv)
 
 
-			http_put_string ("<ul>GET variables%N")
-			print_hash_table_string_string (henv.variables_get.new_cursor)
-			http_put_string ("</ul>")
+			http_put_string ("<ul>GET variables%N", henv)
+			print_hash_table_string_string (henv.variables_get.new_cursor, henv)
+			http_put_string ("</ul>", henv)
 
-			http_put_string ("<ul>POST variables%N")
-			print_hash_table_string_string (henv.variables_post.new_cursor)
-			http_put_string ("</ul>")
+			http_put_string ("<ul>POST variables%N", henv)
+			print_hash_table_string_string (henv.variables_post.new_cursor, henv)
+			http_put_string ("</ul>", henv)
 
 			if attached henv.uploaded_files as l_files and then not l_files.is_empty then
-				http_put_string ("<ul>FILES variables%N")
+				http_put_string ("<ul>FILES variables%N", henv)
 				from
 					l_files.start
 				until
 					l_files.after
 				loop
-					http_put_string ("<li><strong>" + l_files.key_for_iteration + "</strong>")
-					http_put_string (" filename=" + l_files.item_for_iteration.name)
-					http_put_string (" type=" + l_files.item_for_iteration.type)
-					http_put_string (" size=" + l_files.item_for_iteration.size.out)
-					http_put_string (" tmp_basename=" + l_files.item_for_iteration.tmp_basename)
-					http_put_string (" tmp_name=" + l_files.item_for_iteration.tmp_name)
+					http_put_string ("<li><strong>" + l_files.key_for_iteration + "</strong>", henv)
+					http_put_string (" filename=" + l_files.item_for_iteration.name, henv)
+					http_put_string (" type=" + l_files.item_for_iteration.type, henv)
+					http_put_string (" size=" + l_files.item_for_iteration.size.out, henv)
+					http_put_string (" tmp_basename=" + l_files.item_for_iteration.tmp_basename, henv)
+					http_put_string (" tmp_name=" + l_files.item_for_iteration.tmp_name, henv)
 					if attached henv.path_info as l_path_info then
-						http_put_string ("<img src=%"")
+						http_put_string ("<img src=%"", henv)
 						from
 							n := l_path_info.occurrences ('/')
 						until
 							n = 0
 						loop
-						 	http_put_string ("../")
+						 	http_put_string ("../", henv)
 						 	n := n - 1
 						end
-						http_put_string (l_files.item_for_iteration.tmp_basename + "%" />")
+						http_put_string (l_files.item_for_iteration.tmp_basename + "%" />", henv)
 					else
-						http_put_string ("<img src=%"" + l_files.item_for_iteration.tmp_basename + "%" />")
+						http_put_string ("<img src=%"" + l_files.item_for_iteration.tmp_basename + "%" />", henv)
 					end
-					http_put_string ("<a href=%"" + henv.script_url ("/download/" + l_files.item_for_iteration.tmp_basename) + "%">")
-					http_put_string ("<img src=%"" + henv.script_url ("/file/" + l_files.item_for_iteration.tmp_basename) + "%" />")
-					http_put_string ("</a>")
+					http_put_string ("<a href=%"" + henv.script_url ("/download/" + l_files.item_for_iteration.tmp_basename) + "%">", henv)
+					http_put_string ("<img src=%"" + henv.script_url ("/file/" + l_files.item_for_iteration.tmp_basename) + "%" />", henv)
+					http_put_string ("</a>", henv)
 
-					http_put_string ("</li>%N")
+					http_put_string ("</li>%N", henv)
 					l_files.forth
 				end
-				http_put_string ("</ul>")
+				http_put_string ("</ul>", henv)
 			end
 
-			http_put_string ("<ul>COOKIE variables%N")
-			print_hash_table_string_string (henv.cookies_variables.new_cursor)
-			http_put_string ("</ul>")
+			http_put_string ("<ul>COOKIE variables%N", henv)
+			print_hash_table_string_string (henv.cookies_variables.new_cursor, henv)
+			http_put_string ("</ul>", henv)
 
-			http_put_string ("<ul>Environment variables%N")
-			print_environment_variables (henv.environment_variables)
-			http_put_string ("</ul>")
-			http_put_string (footer)
-			http_flush
+			http_put_string ("<ul>Environment variables%N", henv)
+			print_environment_variables (henv.environment_variables, henv)
+			http_put_string ("</ul>", henv)
+			http_put_string (footer, henv)
+			http_flush (henv)
 
 			post_execute_ignored := True
 		end
@@ -450,13 +450,13 @@ feature -- Execution
 
 	post_execute (henv: detachable like new_environment; e: detachable EXCEPTION)
 		do
-			if e /= Void then
-				http_put_string ("Exception occurred%N")
-				http_put_string ("<p>" + e.meaning + "</p")
+			if e /= Void and henv /= Void then
+				http_put_string ("Exception occurred%N", henv)
+				http_put_string ("<p>" + e.meaning + "</p", henv)
 				if attached e.exception_trace as l_trace then
-					http_put_string ("<pre>" + l_trace + "</pre>")
+					http_put_string ("<pre>" + l_trace + "</pre>", henv)
 				end
-				http_flush
+				http_flush (henv)
 			end
 			if not post_execute_ignored then
 				Precursor (henv, e)
@@ -533,19 +533,19 @@ feature -- Access
 			Result := "</body>%N</html>%N"
 		end
 
-	print_environment_variables (vars: HASH_TABLE [STRING, STRING])
+	print_environment_variables (vars: HASH_TABLE [STRING, STRING]; henv: like new_environment)
 		do
-			print_hash_table_string_string (vars.new_cursor)
+			print_hash_table_string_string (vars.new_cursor, henv)
 		end
 
-	print_hash_table_string_string (ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL])
+	print_hash_table_string_string (ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL]; henv: like new_environment)
 		do
 			from
 				ht.start
 			until
 				ht.after
 			loop
-				http_put_string ("<li><strong>" + ht.key.as_string_8 + "</strong> = " + ht.item.as_string_8 + "</li>%N")
+				http_put_string ("<li><strong>" + ht.key.as_string_8 + "</strong> = " + ht.item.as_string_8 + "</li>%N", henv)
 				ht.forth
 			end
 		end
@@ -563,7 +563,7 @@ feature -- Access
 			end
 		end
 
-	print_errors (hdl: ERROR_HANDLER)
+	print_errors (hdl: ERROR_HANDLER; henv: like new_environment)
 		local
 			v: APPLICATION_ERROR_HTML_PRINTER
 			s: STRING
@@ -572,7 +572,7 @@ feature -- Access
 				create s.make (50)
 				create v.make (s)
 				e.process (v)
-				http_put_string (s)
+				http_put_string (s, henv)
 			end
 		end
 
