@@ -919,18 +919,18 @@ feature -- Element change
 			--| on apache:				PATH_INFO = /foo/bar
 			--| So, we might need to check with SCRIPT_NAME and remove it on IIS
 			--| store original PATH_INFO in ORIG_PATH_INFO
-			environment_variables.delete_variable ("ORIG_PATH_INFO")
-			if s /= Void then
+			if s /= Void and then not s.is_empty then
+				environment_variables.replace_variable (s, {HTTPD_ENVIRONMENT_NAMES}.orig_path_info)
 				path_info := s
 				if attached environment_variables.script_name as l_script_name then
 					if s.starts_with (l_script_name) then
 						l_path_info := s.substring (l_script_name.count + 1 , s.count)
-						environment_variables.replace_variable (l_path_info, "PATH_INFO")
+						environment_variables.replace_variable (l_path_info, {HTTPD_ENVIRONMENT_NAMES}.path_info)
 						path_info := l_path_info
-						environment_variables.replace_variable (s, "ORIG_PATH_INFO")
 					end
 				end
 			else
+				environment_variables.delete_variable ({HTTPD_ENVIRONMENT_NAMES}.orig_path_info)
 				path_info := ""
 			end
 		end
