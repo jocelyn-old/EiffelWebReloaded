@@ -1,4 +1,4 @@
-note
+﻿note
 	description: "Summary description for {APP_ORDERS}."
 	author: ""
 	date: "$Date$"
@@ -22,7 +22,7 @@ feature {NONE} -- Initialization
 	make (a_path: like path)
 		do
 			path := a_path
-			description := "testing"
+			description := api_doc
 			initialize
 		end
 
@@ -41,6 +41,66 @@ feature {NONE} -- Access: Implementation
 feature -- Access
 
 	authentication_required: BOOLEAN = False
+
+	api_doc : STRING = "[
+			 <table border="1">
+			<tr>
+			<th>VERB</th>
+			<th>URI Template</th>
+			<th>USE</th>
+			</tr>
+			<tr>
+			<td>POST</td>
+			<td>/order</td>
+			<td>Create a new order, and upon success, receive a Locationheader specifying the new order URI.</td>
+			</tr>
+			<tr>
+			<td>GET</td>
+			<td>/order/{orderId}</td>
+			<td> Request the current state of the order specified by the URI.</td>
+			</tr>
+			<tr>
+			<td>PUT</td>
+			<td>/order/{orderId}</td>
+			<td> Update an order at the given URI with new information, providing the full representation.</td>
+			</tr>
+			<tr>
+			<td>DELETE</td>
+			<td>/order/{orderId}</td>
+			<td>Logically remove the order identified by the given URI.</td>
+			</tr>
+			</table>
+
+			<table border="1">
+			<tr>
+			<th>JSON ORDER</th>
+			<th>Coffee Names</th>
+			<th>Options</th>
+			<th>Size</th>
+			<th>Quantity</th>
+			</tr>
+			<tr>
+			<td>
+  	      {<br/>
+		"location":"takeAway",<br/>
+		"items":[<br/>
+		        {<br/>
+		        "name":"Late",<br/>
+		        "option":"skim",<br/>
+		        "size":"Small",<br/>
+		        "quantity":1<br/>
+		        }<br/>
+		    ]<br/>
+		}<br/></td>
+			<td>late,cappuccino,expresso</td>
+			<td>skim,semi,whole</td>
+			<td>small,mediumn, large</td>
+			<td> &gt;= 1</td>
+			</tr>
+			</table>
+
+
+	]"
 
 feature -- Execution
 
@@ -208,7 +268,7 @@ feature -- Process PUT
 					if  l_order /= Void and then db_access.orders.has_key (l_order.id) then
 						update_order( l_order)
 						create rep.make (path)
-						rep.headers.put_status (rep.headers.created)
+						rep.headers.put_status (rep.headers.ok)
 						rep.headers.put_content_type_application_json
 						if attached henv.http_host as host then
 							l_location := "http://"+host + path + "/" + l_order.id
