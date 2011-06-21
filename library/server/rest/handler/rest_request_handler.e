@@ -123,10 +123,20 @@ feature {NONE} -- Format path location
 
 	opt_format_located_after_parameters: INTEGER = 2
 
+feature -- Status report
+
+	is_valid_context (ctx: REST_REQUEST_CONTEXT): BOOLEAN
+			-- Is `ctx' valid context for current handler?
+		do
+			Result := request_method_name_supported (ctx.request_method)
+		end
+
 feature -- Execution
 
 	execute (ctx: REST_REQUEST_CONTEXT)
 			-- Execute request handler	
+		require
+			is_valid_context: is_valid_context (ctx)
 		local
 			l_format, l_args: detachable STRING
 			rescued: BOOLEAN

@@ -30,26 +30,34 @@ feature -- Registration
 
 feature -- Access
 
-	handler_by_path (a_path: STRING): detachable REST_REQUEST_HANDLER
-		require
-			a_path_valid: a_path /= Void
+	context_path (a_path: STRING): STRING
+			-- Prepared path from context which match requirement
+			-- i.e: not empty, starting with '/'
 		local
 			p: INTEGER
 			l_path: STRING
 		do
-			l_path := a_path
-			if l_path.is_empty then
-				l_path := "/"
+			Result := a_path
+			if Result.is_empty then
+				Result := "/"
 			else
-				if l_path[1] /= '/' then
-					l_path := "/" + l_path
+				if Result[1] /= '/' then
+					Result := "/" + Result
 				end
-				p := l_path.index_of ('.', 1)
+				p := Result.index_of ('.', 1)
 				if p > 0 then
-					l_path := l_path.substring (1, p - 1)
+					Result := Result.substring (1, p - 1)
 				end
 			end
-			Result := handlers.item (l_path)
+		ensure
+			result_not_empty: not Result.is_empty
+		end
+
+	handler_by_path (a_path: STRING): detachable REST_REQUEST_HANDLER
+		require
+			a_path_valid: a_path /= Void
+		do
+			Result := handlers.item (context_path (a_path))
 		ensure
 			a_path_unchanged: a_path.same_string (old a_path)
 		end
@@ -61,38 +69,38 @@ feature -- Access
 			p: INTEGER
 			l_path: STRING
 		do
-			l_path := a_path
-			if not l_path.is_empty then
-				if l_path[1] /= '/' then
-					l_path := "/" + a_path
+			l_path := context_path (a_path)
+			from
+				p := l_path.count + 1
+			until
+				p <= 1 or Result /= Void
+			loop
+				Result := handler_by_path (l_path.substring (1, p - 1))
+				if Result = Void then
+					p := l_path.last_index_of ('/', p - 1)
 				end
-				from
-					p := l_path.count + 1
-				until
-					p <= 1 or Result /= Void
-				loop
-					Result := handler_by_path (l_path.substring (1, p - 1))
-					if Result = Void then
-						p := l_path.last_index_of ('/', p - 1)
-					end
-				variant
-					p
-				end
+			variant
+				p
 			end
 		ensure
 			a_path_unchanged: a_path.same_string (old a_path)
 		end
 
-	handler (ctx: HTTPD_REQUEST_CONTEXT): detachable REST_REQUEST_HANDLER
+	handler (ctx: REST_REQUEST_CONTEXT): detachable REST_REQUEST_HANDLER
 		require
 			ctx_valid: ctx /= Void and then ctx.path_info /= Void
 		do
 			Result := handler_by_path (ctx.path_info)
+			if Result /= Void then
+				if not Result.is_valid_context (ctx) then
+					Result := Void
+				end
+			end
 		ensure
 			ctx_path_info_unchanged: ctx.path_info.same_string (old ctx.path_info)
 		end
 
-	smart_handler (ctx: HTTPD_REQUEST_CONTEXT): detachable REST_REQUEST_HANDLER
+	smart_handler (ctx: REST_REQUEST_CONTEXT): detachable REST_REQUEST_HANDLER
 		require
 			ctx_valid: ctx /= Void and then ctx.path_info /= Void
 		do
