@@ -36,7 +36,7 @@ feature {NONE} -- Initialization
 			create error_handler.make
 
 			raw_post_data_recorded := True
-
+			initialize
 			analyze
 		end
 
@@ -45,7 +45,6 @@ feature {NONE} -- Initialization
 		local
 			p: INTEGER
 		do
-			initialize
 				--| do not use `force', to avoid overwriting existing variable
 			if attached environment_variables.request_uri as rq_uri then
 				p := rq_uri.index_of ('?', 1)
