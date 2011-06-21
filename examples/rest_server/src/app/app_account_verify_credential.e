@@ -40,7 +40,7 @@ feature -- Access
 
 feature -- Execution
 
-	execute_unauthorized (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_unauthorized (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			h: HTTPD_HEADER
 		do
@@ -51,7 +51,7 @@ feature -- Execution
 			h.recycle
 		end
 
-	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			l_full: BOOLEAN
 			rep: detachable REST_RESPONSE

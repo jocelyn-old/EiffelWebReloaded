@@ -38,13 +38,13 @@ feature -- Access
 
 feature -- Execution
 
-	hidden (ctx: REST_ENVIRONMENT): BOOLEAN
+	hidden (ctx: REST_REQUEST_CONTEXT): BOOLEAN
 			-- Do we hide this application in service publishing
 		do
 			Result := not ctx.authenticated
 		end
 
-	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			h: HTTPD_HEADER
 			s: detachable STRING

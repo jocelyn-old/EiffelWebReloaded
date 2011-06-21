@@ -11,7 +11,7 @@ inherit
 
 feature -- Basic operation
 
-	process_error (ctx: REST_ENVIRONMENT; m: STRING; a_format_name: detachable STRING)
+	process_error (ctx: REST_REQUEST_CONTEXT; m: STRING; a_format_name: detachable STRING)
 		local
 			rep: REST_RESPONSE
 			s: STRING

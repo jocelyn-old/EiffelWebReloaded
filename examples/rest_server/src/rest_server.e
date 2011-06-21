@@ -72,7 +72,7 @@ feature {NONE} -- Initialization
 
 feature {NONE} -- Environment
 
-	new_request_context (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_ENVIRONMENT
+	new_request_context (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_REQUEST_CONTEXT
 		do
 			create Result.make (a_vars, a_input, a_output)
 			
@@ -83,7 +83,7 @@ feature {NONE} -- Environment
 				--| Precise our own authentication system
 			Result.authentication := create {REST_SERVER_AUTHENTICATION}
 
-				--| Note that you can also create your own REST_ENVIRONMENT with specific features
+				--| Note that you can also create your own REST_REQUEST_CONTEXT with specific features
 		end
 
 feature {NONE} -- Handlers		
@@ -171,7 +171,7 @@ feature -- Implementation
 			exit_with_code (-1)
 		end
 
-	execute_exit_application (ctx: REST_ENVIRONMENT; a_format_name: detachable STRING; a_args: detachable STRING)
+	execute_exit_application (ctx: REST_REQUEST_CONTEXT; a_format_name: detachable STRING; a_args: detachable STRING)
 		local
 			rep: REST_RESPONSE
 			s: STRING

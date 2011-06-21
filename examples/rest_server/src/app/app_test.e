@@ -37,7 +37,7 @@ feature -- Access
 
 feature -- Execution
 
-	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 			s: STRING
