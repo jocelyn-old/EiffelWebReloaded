@@ -12,6 +12,7 @@ inherit
 		redefine
 			pre_execute,
 			post_execute,
+			rescue_execute,
 			new_request_context
 		end
 
@@ -447,7 +448,14 @@ feature -- Execution
 			post_execute_ignored := False
 		end
 
-	post_execute (ctx: detachable like new_request_context; e: detachable EXCEPTION)
+	post_execute (ctx: detachable like new_request_context)
+		do
+			if not post_execute_ignored then
+				Precursor (ctx)
+			end
+		end
+
+	rescue_execute (ctx: detachable like new_request_context; e: detachable EXCEPTION)
 		do
 			if e /= Void and ctx /= Void then
 				http_put_string ("Exception occurred%N", ctx)
@@ -457,9 +465,7 @@ feature -- Execution
 				end
 				http_flush (ctx)
 			end
-			if not post_execute_ignored then
-				Precursor (ctx, e)
-			end
+			post_execute (ctx)
 		end
 
 	post_execute_ignored: BOOLEAN
@@ -532,12 +538,12 @@ feature -- Access
 			Result := "</body>%N</html>%N"
 		end
 
-	print_environment_variables (vars: HASH_TABLE [STRING, STRING]; ctx: like new_environment)
+	print_environment_variables (vars: HASH_TABLE [STRING, STRING]; ctx: like new_request_context)
 		do
 			print_hash_table_string_string (vars.new_cursor, ctx)
 		end
 
-	print_hash_table_string_string (ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL]; ctx: like new_environment)
+	print_hash_table_string_string (ht: HASH_TABLE_ITERATION_CURSOR [STRING_GENERAL, STRING_GENERAL]; ctx: like new_request_context)
 		do
 			from
 				ht.start
@@ -562,7 +568,7 @@ feature -- Access
 			end
 		end
 
-	print_errors (hdl: ERROR_HANDLER; ctx: like new_environment)
+	print_errors (hdl: ERROR_HANDLER; ctx: like new_request_context)
 		local
 			v: APPLICATION_ERROR_HTML_PRINTER
 			s: STRING
