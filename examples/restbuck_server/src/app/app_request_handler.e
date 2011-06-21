@@ -11,7 +11,7 @@ inherit
 
 feature -- Basic operation
 
-	process_error (henv: REST_ENVIRONMENT; m: STRING; a_format_name: detachable STRING)
+	process_error (ctx: REST_REQUEST_CONTEXT; m: STRING; a_format_name: detachable STRING)
 		local
 			rep: REST_RESPONSE
 			s: STRING
@@ -22,7 +22,7 @@ feature -- Basic operation
 			create s.make_empty
 			s.append_string ("Error: " + m)
 			rep.set_message (s)
-			henv.output.put_string (rep.string)
+			ctx.output.put_string (rep.string)
 			rep.recycle
 		end
 

@@ -104,39 +104,39 @@ feature -- Access
 
 feature -- Execution
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			l_date : DATE_TIME
 		do
-				if henv.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_post_name) then
-					pre_process_post (henv, a_format, a_args)
-				elseif henv.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_get_name)  then
-					pre_process_get (henv, a_format, a_args)
-				elseif henv.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_put_name)  then
-					pre_process_put (henv, a_format, a_args)
-				elseif henv.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_delete_name)  then
-					pre_process_delete (henv, a_format, a_args)
+				if ctx.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_post_name) then
+					pre_process_post (ctx, a_format, a_args)
+				elseif ctx.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_get_name)  then
+					pre_process_get (ctx, a_format, a_args)
+				elseif ctx.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_put_name)  then
+					pre_process_put (ctx, a_format, a_args)
+				elseif ctx.request_method.same_string ({REST_REQUEST_METHOD_CONSTANTS}.method_delete_name)  then
+					pre_process_delete (ctx, a_format, a_args)
 				else
-					handle_method_not_supported_response(henv)
+					handle_method_not_supported_response(ctx)
 				end
 		end
 
 
 feature -- process POST		
-	pre_process_post (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	pre_process_post (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 		do
-			if attached henv.orig_path_info as orig_path_info then
+			if attached ctx.orig_path_info as orig_path_info then
 				if is_valid_uri ({REST_REQUEST_METHOD_CONSTANTS}.method_post_name, orig_path_info) then
-					process_post (henv, a_format, a_args)
+					process_post (ctx, a_format, a_args)
 				else
-					handle_method_not_supported_response (henv)
+					handle_method_not_supported_response (ctx)
 				end
 			end
 		end
 
-	process_post (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	process_post (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 			l_values: HASH_TABLE [STRING_32, STRING]
@@ -150,9 +150,9 @@ feature -- process POST
 				fixme ("TODO handle an Internal Server Error")
 				fixme ("Refactor the code, create new abstractions")
 				fixme ("Add Header Date to the response")
-				if henv.content_length > 0 then
-					henv.input.read_stream (henv.content_length)
-					l_post := henv.input.last_string
+				if ctx.content_length > 0 then
+					ctx.input.read_stream (ctx.content_length)
+					l_post := ctx.input.last_string
 					l_order := extract_order_request(l_post)
 					fixme ("TODO move to a service method")
 					if  l_order /= Void then
@@ -160,7 +160,7 @@ feature -- process POST
 						create rep.make (path)
 						rep.headers.put_status (rep.headers.created)
 						rep.headers.put_content_type_application_json
-						if attached henv.http_host as host then
+						if attached ctx.http_host as host then
 							l_location := "http://"+host + path + "/" + l_order.id
 							rep.headers.add_header ("Location:"+ l_location)
 						end
@@ -168,31 +168,31 @@ feature -- process POST
 						if jv /= Void then
 							rep.set_message (jv.representation)
 						end
-						henv.output.put_string (rep.string)
+						ctx.output.put_string (rep.string)
 						rep.recycle
 					else
-						handle_bad_request_response(l_post +"%N is not a valid ORDER",henv.output)
+						handle_bad_request_response(l_post +"%N is not a valid ORDER",ctx.output)
 					end
 				else
-					handle_bad_request_response("Bad request, content_lenght empty",henv.output)
+					handle_bad_request_response("Bad request, content_lenght empty",ctx.output)
 				end
 		end
 
 feature -- process GET
-	pre_process_get (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	pre_process_get (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 		do
-			if attached henv.orig_path_info as orig_path_info then
+			if attached ctx.orig_path_info as orig_path_info then
 				if is_valid_uri ({REST_REQUEST_METHOD_CONSTANTS}.method_get_name, orig_path_info) then
-					process_get (henv, a_format, a_args)
+					process_get (ctx, a_format, a_args)
 				else
-					handle_method_not_supported_response (henv)
+					handle_method_not_supported_response (ctx)
 				end
 			end
 		end
 
-	process_get (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	process_get (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 			l_values: HASH_TABLE [STRING_32, STRING]
@@ -207,7 +207,7 @@ feature -- process GET
 			uri : LIST[STRING]
 		do
 				fixme ("TODO handle error conditions")
-				if  attached henv.orig_path_info as orig_path then
+				if  attached ctx.orig_path_info as orig_path then
 					uri := orig_path.split ('/')
 					id := uri.at (3)
 					create joc.make
@@ -220,11 +220,11 @@ feature -- process GET
 							rep.headers.put_status (rep.headers.ok)
 							rep.headers.put_content_type_application_json
 							rep.set_message (j.representation)
-							henv.output.put_string (rep.string)
+							ctx.output.put_string (rep.string)
 							rep.recycle
 						end
 					else
-						handle_resource_not_found_response ("The following resource"+ orig_path+ " is not found ", henv.output)
+						handle_resource_not_found_response ("The following resource"+ orig_path+ " is not found ", ctx.output)
 					end
 				end
 
@@ -232,20 +232,20 @@ feature -- process GET
 		end
 
 feature -- Process PUT
-	pre_process_put (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	pre_process_put (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 		do
-			if attached henv.orig_path_info as orig_path_info then
+			if attached ctx.orig_path_info as orig_path_info then
 				if is_valid_uri ({REST_REQUEST_METHOD_CONSTANTS}.method_put_name, orig_path_info) then
-					process_put (henv, a_format, a_args)
+					process_put (ctx, a_format, a_args)
 				else
-					handle_method_not_supported_response (henv)
+					handle_method_not_supported_response (ctx)
 				end
 			end
 		end
 
-	process_put (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	process_put (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 			l_values: HASH_TABLE [STRING_32, STRING]
@@ -260,9 +260,9 @@ feature -- Process PUT
 				fixme ("Refactor the code, create new abstractions")
 				fixme ("Add Header Date to the response")
 				fixme ("Put implememntation is wrong!!!!")
-				if henv.content_length > 0 then
-					henv.input.read_stream (henv.content_length)
-					l_post := henv.input.last_string
+				if ctx.content_length > 0 then
+					ctx.input.read_stream (ctx.content_length)
+					l_post := ctx.input.last_string
 					l_order := extract_order_request(l_post)
 					fixme ("TODO move to a service method")
 					if  l_order /= Void and then db_access.orders.has_key (l_order.id) then
@@ -270,7 +270,7 @@ feature -- Process PUT
 						create rep.make (path)
 						rep.headers.put_status (rep.headers.ok)
 						rep.headers.put_content_type_application_json
-						if attached henv.http_host as host then
+						if attached ctx.http_host as host then
 							l_location := "http://"+host + path + "/" + l_order.id
 							rep.headers.add_header ("Location:"+ l_location)
 						end
@@ -278,31 +278,31 @@ feature -- Process PUT
 						if jv /= Void then
 							rep.set_message (jv.representation)
 						end
-						henv.output.put_string (rep.string)
+						ctx.output.put_string (rep.string)
 						rep.recycle
 					else
-						handle_bad_request_response(l_post +"%N is not a valid ORDER, maybe the order does not exist in the system",henv.output)
+						handle_bad_request_response(l_post +"%N is not a valid ORDER, maybe the order does not exist in the system",ctx.output)
 					end
 				else
-					handle_bad_request_response("Bad request, content_lenght empty",henv.output)
+					handle_bad_request_response("Bad request, content_lenght empty",ctx.output)
 				end
 		end
 
 feature -- process DELETE
-	pre_process_delete (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	pre_process_delete (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 		do
-			if attached henv.orig_path_info as orig_path_info then
+			if attached ctx.orig_path_info as orig_path_info then
 				if is_valid_uri ({REST_REQUEST_METHOD_CONSTANTS}.method_delete_name, orig_path_info) then
-					process_delete (henv, a_format, a_args)
+					process_delete (ctx, a_format, a_args)
 				else
-					handle_method_not_supported_response (henv)
+					handle_method_not_supported_response (ctx)
 				end
 			end
 		end
 
-	process_delete (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	process_delete (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 			l_values: HASH_TABLE [STRING_32, STRING]
@@ -316,7 +316,7 @@ feature -- process DELETE
 				fixme ("TODO handle an Internal Server Error")
 				fixme ("Refactor the code, create new abstractions")
 				fixme ("Add Header Date to the response")
-				if  attached henv.orig_path_info as orig_path then
+				if  attached ctx.orig_path_info as orig_path then
 					uri := orig_path.split ('/')
 					id := uri.at (3)
 					if  db_access.orders.has_key (id) then
@@ -324,10 +324,10 @@ feature -- process DELETE
 						create rep.make (path)
 						rep.headers.put_status (rep.headers.no_content)
 						rep.headers.put_content_type_application_json
-						henv.output.put_string (rep.string)
+						ctx.output.put_string (rep.string)
 						rep.recycle
 					else
-						handle_resource_not_found_response (orig_path + " not found in this server", henv.output)
+						handle_resource_not_found_response (orig_path + " not found in this server", ctx.output)
 					end
 				end
 		end
@@ -431,14 +431,14 @@ feature -- Implementation
 		end
 
 
-	handle_method_not_supported_response (henv :REST_ENVIRONMENT)
+	handle_method_not_supported_response (ctx :REST_REQUEST_CONTEXT)
 		local
 			rep: detachable REST_RESPONSE
 		do
 					create rep.make (path)
 					rep.headers.put_status (rep.headers.method_not_allowed)
 					rep.headers.put_content_type_application_json
-					henv.output.put_string (rep.string)
+					ctx.output.put_string (rep.string)
 					rep.recycle
 		end
 end
