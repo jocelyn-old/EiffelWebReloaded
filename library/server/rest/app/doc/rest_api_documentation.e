@@ -33,7 +33,7 @@ feature -- Access
 
 feature -- Execution
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: like new_html_page
 			s: STRING
@@ -46,11 +46,11 @@ feature -- Execution
 			create s.make_empty
 
 			if a_args /= Void and then not a_args.is_empty then
-				rq := handler_manager.handler (a_args)
+				rq := handler_manager.handler_by_path (a_args)
 				if rq = Void then
-					rq := handler_manager.smart_handler (a_args)
+					rq := handler_manager.smart_handler_by_path (a_args)
 					if attached {REST_REQUEST_GROUP_HANDLER} rq as grp then
-						rq := grp.handlers.handler (a_args)
+						rq := grp.handlers.handler_by_path (a_args)
 					end
 				end
 				if
@@ -67,10 +67,10 @@ feature -- Execution
 
 				s.append_string ("<div class=%"api%">")
 				s.append_string ("<h2 class=%"api-name%" >")
-				s.append_string ("<a href=%"" + url (henv, Void, False) + "%">.. Show all features ..</a>")
+				s.append_string ("<a href=%"" + url (ctx, Void, False) + "%">.. Show all features ..</a>")
 				s.append_string ("</h2></div>%N")
 
-				process_request_handler_doc (rq, s, henv, a_format, l_dft_format_name)
+				process_request_handler_doc (rq, s, ctx, a_format, l_dft_format_name)
 			else
 				rep.set_big_title ("API: Technical documentation")
 
@@ -82,17 +82,17 @@ feature -- Execution
 					rq := hdl_cursor.item
 					rep.add_shortcut (rq.path)
 					s.append ("<a name=%"" + rep.last_added_shortcut + "%"/>")
-					process_request_handler_doc (rq, s, henv, a_format, Void)
+					process_request_handler_doc (rq, s, ctx, a_format, Void)
 					hdl_cursor.forth
 				end
 			end
 			rep.set_body (s)
 			rep.compute
-			henv.output.put_string (rep.string)
+			ctx.output.put_string (rep.string)
 			rep.recycle
 		end
 
-	process_request_handler_doc (rq: REST_REQUEST_HANDLER; s: STRING; henv: REST_ENVIRONMENT; a_format: detachable STRING; a_dft_format: detachable STRING)
+	process_request_handler_doc (rq: REST_REQUEST_HANDLER; s: STRING; ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_dft_format: detachable STRING)
 		local
 			l_dft_format_name: detachable STRING
 		do
@@ -103,9 +103,9 @@ feature -- Execution
 			end
 
 			s.append_string ("<div class=%"api%">")
-			s.append_string ("<h2 class=%"api-name%" ><a href=%""+ url (henv, rq.path, False) +"%">"+ rq.path +"</a></h2>")
+			s.append_string ("<h2 class=%"api-name%" ><a href=%""+ url (ctx, rq.path, False) +"%">"+ rq.path +"</a></h2>")
 			s.append_string ("<div class=%"inner%">")
-			if rq.hidden (henv) then
+			if rq.hidden (ctx) then
 				s.append_string ("<div class=%"api-description%">This feature is hidden</div>%N")
 			else
 				if attached rq.description as desc then
@@ -121,7 +121,7 @@ feature -- Execution
 						loop
 							s.append_string (" ")
 							s.append_string ("<a class=%"api-handler%" href=%"")
-							s.append_string (url (henv, l_handlers_cursor.item.path, False))
+							s.append_string (url (ctx, l_handlers_cursor.item.path, False))
 							s.append_string ("%">"+ l_handlers_cursor.item.path +"</a>")
 							l_handlers_cursor.forth
 						end
@@ -141,7 +141,7 @@ feature -- Execution
 							if l_formats_cursor.item ~ l_dft_format_name then
 								s.append_string (" selected")
 							end
-							s.append_string ("%" href=%"" + url (henv, rq.path, False) + "." + l_formats_cursor.item + "%">"+ l_formats_cursor.item +"</a>")
+							s.append_string ("%" href=%"" + url (ctx, rq.path, False) + "." + l_formats_cursor.item + "%">"+ l_formats_cursor.item +"</a>")
 							l_formats_cursor.forth
 						end
 					end
@@ -163,6 +163,24 @@ feature -- Execution
 					s.append_string ("</strong></div>")
 				end
 				s.append_string ("<div class=%"api-auth%">Authentication required: <strong>" + rq.authentication_required.out + "</strong></div>")
+				if attached rq.uri_parameters as l_uri_params and then not l_uri_params.is_empty then
+					s.append_string ("<div class=%"api-uri-template%">URI Template: ")
+					s.append_string (rq.path)
+					if attached l_uri_params.new_cursor as l_uri_params_cursor then
+						from
+
+						until
+							l_uri_params_cursor.after
+						loop
+							if attached l_uri_params_cursor.item as l_uri_param then
+								s.append_string ("/<strong>" + l_uri_param.name + "</strong>")
+								s.append_string ("/<em>{" + l_uri_param.name + "}</em>")
+							end
+							l_uri_params_cursor.forth
+						end
+					end
+					s.append_string ("</div>%N")
+				end
 				if attached rq.parameters as l_params and then not l_params.is_empty then
 					s.append_string ("<div class=%"api-params%">Parameters: ")
 
@@ -171,9 +189,9 @@ feature -- Execution
 						s.append_string ("<span class=%"note%">to test the parameter(s), please first select a supported format.</span>%N")
 					else
 						if rq.method_post_supported then
-							s.append_string ("<form id=%""+ rq.path +"%" method=%"POST%" action=%"" + henv.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
+							s.append_string ("<form id=%""+ rq.path +"%" method=%"POST%" action=%"" + ctx.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
 						else
-							s.append_string ("<form id=%""+ rq.path +"%" method=%"GET%" action=%"" + henv.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
+							s.append_string ("<form id=%""+ rq.path +"%" method=%"GET%" action=%"" + ctx.script_url (rq.path) + "." + l_dft_format_name + "%">%N")
 						end
 					end
 					s.append_string ("<ul>")
@@ -207,9 +225,9 @@ feature -- Execution
 					s.append_string ("</ul></div>")
 				else
 					if l_dft_format_name /= Void then
-						s.append_string ("<a class=%"api-name%" href=%"" + henv.script_url (rq.path + "." + l_dft_format_name) + "%">Test "+ rq.path  + "." + l_dft_format_name + "</a>")
+						s.append_string ("<a class=%"api-name%" href=%"" + ctx.script_url (rq.path + "." + l_dft_format_name) + "%">Test "+ rq.path  + "." + l_dft_format_name + "</a>")
 					else
-						s.append_string ("<a class=%"api-name%" href=%"" + henv.script_url (rq.path) + "%">Test "+ rq.path +"</a>")
+						s.append_string ("<a class=%"api-name%" href=%"" + ctx.script_url (rq.path) + "%">Test "+ rq.path +"</a>")
 					end
 				end
 				s.append_string ("</div>%N")

@@ -48,7 +48,17 @@ feature -- Unix time stamp
 			Result := l_date_time.definite_duration (epoch).fine_seconds_count
 		end
 
-note
+feature -- Unix time stamp conversion
+
+	unix_time_stamp_to_date_time (i64: INTEGER_64): DATE_TIME
+			-- Date time related to `i64'
+		do
+			create Result.make_from_epoch (i64.as_integer_32)
+		ensure
+			same_unix_time_stamp: unix_time_stamp (Result) = i64
+		end
+
+;note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 	source: "[

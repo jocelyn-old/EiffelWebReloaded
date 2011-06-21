@@ -99,7 +99,7 @@ feature -- Access: table
 			create Result.make (variables)
 		end
 
-feature {HTTPD_ENVIRONMENT} -- Element change
+feature {HTTPD_REQUEST_CONTEXT} -- Element change
 
 	add_variable (v: STRING_32; k: STRING_32)
 			-- Added `k,v' to variables table
@@ -112,7 +112,7 @@ feature {HTTPD_ENVIRONMENT} -- Element change
 			variables.force (v, k)
 		end
 
-feature {HTTPD_ENVIRONMENT} -- Element change		
+feature {HTTPD_REQUEST_CONTEXT} -- Element change		
 
 	variables: HASH_TABLE [STRING_32, STRING_32]
 			-- Variables table

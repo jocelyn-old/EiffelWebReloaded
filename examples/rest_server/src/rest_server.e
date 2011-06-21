@@ -12,7 +12,7 @@ inherit
 
 	REST_APPLICATION --| Use the provided RESTful implementation
 		redefine
-			new_environment,
+			new_request_context,
 			execute,
 			exit_with_code
 		end
@@ -22,7 +22,7 @@ inherit
 	HTTPD_NINO_APPLICATION
 		redefine
 			initialize_server,
-			new_environment,
+			new_request_context,
 			execute
 		end
 
@@ -72,7 +72,7 @@ feature {NONE} -- Initialization
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_ENVIRONMENT
+	new_request_context (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_ENVIRONMENT
 		do
 			create Result.make (a_vars, a_input, a_output)
 			
@@ -121,13 +121,13 @@ feature {NONE} -- Handlers
 
 feature -- Execution
 
-	execute (henv: like new_environment)
+	execute (ctx: like new_request_context)
 		do
-			logger.logf (1, "[$3] execute: path_info=$1 (request_count=$2)", <<henv.path_info, request_count, henv.environment_variables.remote_addr>>)
-			Precursor (henv)
+			logger.logf (1, "[$3] execute: path_info=$1 (request_count=$2)", <<ctx.path_info, request_count, ctx.environment_variables.remote_addr>>)
+			Precursor (ctx)
 		end
 
-	execute_default (henv: like new_environment)
+	execute_default (ctx: like new_request_context)
 			-- Execute the default behavior
 		local
 			rqst_uri: detachable STRING
@@ -136,42 +136,42 @@ feature -- Execution
 			s: STRING
 		do
 			create h.make
-			h.put_refresh (henv.script_url ("/doc"), 2, {HTTP_STATUS_CODE}.temp_redirect)
+			h.put_refresh (ctx.script_url ("/doc"), 2, {HTTP_STATUS_CODE}.temp_redirect)
 			h.put_content_type_text_html
 			create s.make_empty
-			s := "Request [" + henv.path_info + "] is not available. <br/>%N";
-			s.append ("You are being redirected to <a href=%"" + henv.script_url ("/doc") + "%">/doc</a> in 2 seconds ...%N")
+			s := "Request [" + ctx.path_info + "] is not available. <br/>%N";
+			s.append ("You are being redirected to <a href=%"" + ctx.script_url ("/doc") + "%">/doc</a> in 2 seconds ...%N")
 			h.put_content_length (s.count)
-			henv.output.put_string (h.string)
-			henv.output.put_string (s)
+			ctx.output.put_string (h.string)
+			ctx.output.put_string (s)
 		end
 
-	execute_rescue (henv: like new_environment)
+	execute_rescue (ctx: like new_request_context)
 			-- Execute the default rescue behavior
 		do
-			execute_exception_trace (henv)
+			execute_exception_trace (ctx)
 		end
 
 feature -- Implementation
 
-	execute_exception_trace (henv: like new_environment)
+	execute_exception_trace (ctx: like new_request_context)
 		local
 			h: HTTPD_HEADER
 			s: STRING
 		do
 			create h.make
 			h.put_content_type_text_plain
-			henv.output.put_string (h.string)
-			henv.output.put_string ("Error occurred .. rq="+ request_count.out +"%N")
+			ctx.output.put_string (h.string)
+			ctx.output.put_string ("Error occurred .. rq="+ request_count.out +"%N")
 
 			if attached (create {EXCEPTIONS}).exception_trace as l_trace then
-				henv.output.put_string ("<pre>" + l_trace + "</pre>")
+				ctx.output.put_string ("<pre>" + l_trace + "</pre>")
 			end
 			h.recycle
 			exit_with_code (-1)
 		end
 
-	execute_exit_application (henv: REST_ENVIRONMENT; a_format_name: detachable STRING; a_args: detachable STRING)
+	execute_exit_application (ctx: REST_ENVIRONMENT; a_format_name: detachable STRING; a_args: detachable STRING)
 		local
 			rep: REST_RESPONSE
 			s: STRING
@@ -180,9 +180,9 @@ feature -- Implementation
 			rep.headers.put_content_type_text_html
 			create s.make_empty
 			s.append_string ("Exited")
-			s.append_string (" <a href=%"" + henv.script_url ("/") + "%">start again</a>%N")
+			s.append_string (" <a href=%"" + ctx.script_url ("/") + "%">start again</a>%N")
 			rep.set_message (s)
-			henv.output.put_string (rep.string)
+			ctx.output.put_string (rep.string)
 			rep.recycle
 			exit_with_code (0)
 		end

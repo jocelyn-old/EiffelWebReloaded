@@ -37,7 +37,7 @@ feature -- Access
 
 feature -- Execution
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: detachable REST_RESPONSE
 			s: STRING
@@ -51,7 +51,7 @@ feature -- Execution
 				elseif a_args.starts_with ("env") then
 					create rep.make (path)
 					create s.make_empty
-					ht := henv.variables.new_cursor
+					ht := ctx.variables.new_cursor
 					if a_format = Void or else a_format.same_string ("text") then
 						rep.headers.put_content_type_text_plain
 						from
@@ -111,28 +111,28 @@ feature -- Execution
 				rep.headers.put_content_type_text_html
 				create s.make_empty
 				s.append_string ("test")
-				if attached henv.environment_variable ("REQUEST_COUNT") as l_request_count then
+				if attached ctx.environment_variable ("REQUEST_COUNT") as l_request_count then
 					s.append_string ("(request_count="+ l_request_count +")<br/>%N")
 				end
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + "/env") + "%">/test/env</a> to display all variables <br/>%N")
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + ".json/env") + "%">/test.json/env</a> to display all variables in JSON <br/>%N")
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + ".xml/env") + "%">/test.xml/env</a> to display all variables in XML <br/>%N")
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + ".html/env") + "%">/test.html/env</a> to display all variables in HTML<br/>%N")
-				s.append ("%N Try <a href=%"http://" + henv.script_absolute_url (henv.path_info + "/crash") + "%">/crash</a> to demonstrate exception trace <br/>%N")
+				s.append ("%N Try <a href=%"http://" + ctx.script_absolute_url (ctx.path_info + "/env") + "%">/test/env</a> to display all variables <br/>%N")
+				s.append ("%N Try <a href=%"http://" + ctx.script_absolute_url (ctx.path_info + ".json/env") + "%">/test.json/env</a> to display all variables in JSON <br/>%N")
+				s.append ("%N Try <a href=%"http://" + ctx.script_absolute_url (ctx.path_info + ".xml/env") + "%">/test.xml/env</a> to display all variables in XML <br/>%N")
+				s.append ("%N Try <a href=%"http://" + ctx.script_absolute_url (ctx.path_info + ".html/env") + "%">/test.html/env</a> to display all variables in HTML<br/>%N")
+				s.append ("%N Try <a href=%"http://" + ctx.script_absolute_url (ctx.path_info + "/crash") + "%">/crash</a> to demonstrate exception trace <br/>%N")
 
-				if attached henv.http_authorization_login_password as t then
+				if attached ctx.http_authorization_login_password as t then
 					s.append_string ("Check login=" + t.login + "<br/>%N")
 				end
-				if henv.authenticated and then attached henv.authenticated_login as l_login then
+				if ctx.authenticated and then attached ctx.authenticated_login as l_login then
 					s.append_string ("Authenticated: login=" + l_login.as_string_8 + "<br/>%N")
 				end
 
-				s.append_string ("<br/>script_url(%"" + henv.path_info + "%")=" + henv.script_url (henv.path_info) + "%N")
+				s.append_string ("<br/>script_url(%"" + ctx.path_info + "%")=" + ctx.script_url (ctx.path_info) + "%N")
 
 				rep.set_message (s)
 			end
 
-			henv.output.put_string (rep.string)
+			ctx.output.put_string (rep.string)
 			rep.recycle
 		end
 

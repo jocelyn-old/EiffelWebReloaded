@@ -1,5 +1,5 @@
 note
-	description: "Summary description for {HTTPD_EXECUTION_VARIABLES}."
+	description: "Summary description for {HTTPD_ENVIRONMENT_VARIABLES}."
 	legal: "See notice at end of class."
 	status: "See notice at end of class."
 	date: "$Date$"
@@ -239,6 +239,15 @@ feature -- Cookie
 			-- Raw value of the 'Cookie' header sent by the user agent.
 		do
 			Result := item ({HTTPD_ENVIRONMENT_NAMES}.http_cookie)
+		end
+
+feature -- Extra
+
+	self: detachable STRING
+			-- The filename of the currently executing script, relative to the document root.
+			-- For instance, 'SELF' in a script at the address http://example.com/test.eapp/foo.bar would be /test.eapp/foo.bar .
+		do
+			Result := item ({HTTPD_ENVIRONMENT_NAMES}.self)
 		end
 
 note

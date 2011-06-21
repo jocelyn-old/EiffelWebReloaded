@@ -13,6 +13,7 @@ feature {NONE} -- Initialization
 			-- Initialize various attributes
 		do
 			create {LINKED_LIST [like parameters.item]} parameters.make
+			create {LINKED_LIST [like uri_parameters.item]} uri_parameters.make
 			set_format_located_before_parameters
 		end
 
@@ -31,8 +32,11 @@ feature -- Access
 	description: detachable STRING
 			-- Optional description
 
-	parameters: LIST [attached like parameter]
+	parameters: LIST [REST_REQUEST_HANDLER_PARAMETER]
 			-- Parameters information
+
+	uri_parameters: LIST [REST_REQUEST_HANDLER_URI_PARAMETER]
+			-- URI Parameters information			
 
 feature -- Access: Format
 
@@ -121,66 +125,104 @@ feature {NONE} -- Format path location
 
 feature -- Execution
 
-	execute (henv: REST_ENVIRONMENT)
+	execute (ctx: REST_REQUEST_CONTEXT)
 			-- Execute request handler	
 		local
 			l_format, l_args: detachable STRING
 			rescued: BOOLEAN
 		do
 			if not rescued then
-				if attached execution_information (henv) as l_info then
+				if attached execution_information (ctx) as l_info then
 					l_format := l_info.format
 					l_args := l_info.arguments
 				end
-				pre_execute (henv)
-				if authentication_required and then not henv.authenticated then
-					execute_unauthorized (henv, l_format, l_args)
+				if request_method_name_supported (ctx.request_method) then
+					pre_execute (ctx)
+					if authentication_required and then not ctx.authenticated then
+						execute_unauthorized (ctx, l_format, l_args)
+					else
+						execute_application (ctx, l_format, l_args)
+					end
+					post_execute (ctx)
 				else
-					execute_application (henv, l_format, l_args)
+					execute_method_not_allowed (ctx, l_format, l_args)
 				end
-				post_execute (henv)
 			else
-				post_execute (henv)
+				rescue_execute (ctx)
 			end
 		rescue
 			rescued := True
 			retry
 		end
 
-	execute_unauthorized (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_unauthorized (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			h: HTTPD_HEADER
 		do
 			create h.make
 			h.put_status ({HTTP_STATUS_CODE}.unauthorized)
 			h.put_header ("WWW-Authenticate: Basic realm=%"Eiffel auth%"")
-			henv.output.put_string (h.string)
+			ctx.output.put_string (h.string)
 			h.recycle
 		end
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_method_not_allowed (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
+		local
+			h: HTTPD_HEADER
+			s: STRING
+			lst: LIST [STRING]
+		do
+			create h.make
+			h.put_status ({HTTP_STATUS_CODE}.method_not_allowed)
+			create s.make_from_string ("Allow: ")
+			from
+				lst := supported_request_method_names
+				lst.start
+			until
+				lst.after
+			loop
+				s.append_string (lst.item)
+				if not lst.islast then
+					s.append_character (',')
+					s.append_character (' ')
+				end
+				lst.forth
+			end
+			h.put_header (s)
+			ctx.output.put_string (h.string)
+			h.recycle
+		end
+
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 			-- Execute request handler with `a_format' ad `a_args'
 		deferred
 		end
 
-	pre_execute (henv: REST_ENVIRONMENT)
+	pre_execute (ctx: REST_REQUEST_CONTEXT)
 			-- Operation processed before `execute'
 		do
 			--| To be redefined if needed
 		end
 
-	post_execute (henv: REST_ENVIRONMENT)
+	post_execute (ctx: REST_REQUEST_CONTEXT)
 			-- Operation processed after `execute'
 		do
 			--| To be redefined if needed
 		end
 
+	rescue_execute (ctx: REST_REQUEST_CONTEXT)
+			-- Operation processed after a rescue
+		do
+			--| To be redefined if needed
+			post_execute (ctx)
+		end
+
 feature -- Execution: report
 
-	execution_information (henv: REST_ENVIRONMENT): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
+	execution_information (ctx: REST_REQUEST_CONTEXT): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
 			-- Execution information related to the request
 		do
-			Result := path_information (henv.path_info)
+			Result := path_information (ctx.path_info)
 		end
 
 	path_information (a_rq_path: STRING): detachable TUPLE [format: detachable STRING; arguments: detachable STRING]
@@ -230,7 +272,7 @@ feature -- Execution: report
 			end
 		end
 
-	url (henv: REST_ENVIRONMENT; args: detachable STRING; abs: BOOLEAN): STRING
+	url (ctx: REST_REQUEST_CONTEXT; args: detachable STRING; abs: BOOLEAN): STRING
 			-- Associated url based on `path' and `args'
 			-- if `abs' then return absolute url
 		local
@@ -247,15 +289,15 @@ feature -- Execution: report
 				s := path
 			end
 			if abs then
-				Result := henv.script_absolute_url (s)
+				Result := ctx.script_absolute_url (s)
 			else
-				Result := henv.script_url (s)
+				Result := ctx.script_url (s)
 			end
 		ensure
 			result_attached: Result /= Void
 		end
 
-	hidden (henv: REST_ENVIRONMENT): BOOLEAN
+	hidden (ctx: REST_REQUEST_CONTEXT): BOOLEAN
 			-- Do we hide this application in service publishing
 		do
 			--| By default: False
@@ -263,52 +305,81 @@ feature -- Execution: report
 
 feature -- Access: parameters
 
-	parameter (n: STRING): detachable REST_REQUEST_HANDLER_PARAMETER
-			-- Parameter's object for `n'.	
-		require
-			n_not_empty: n /= Void and then not n.is_empty
-		local
-			params: like parameters
-		do
-			from
-				params := parameters
-				params.start
-			until
-				Result /= Void or params.after
-			loop
-				Result := params.item
-				if not n.same_string (Result.name) then
-					Result := Void
-					params.forth
-				end
-			end
-		ensure
-			result_valid: Result /= Void implies n.same_string (Result.name)
-		end
+--	parameter (n: STRING): detachable REST_REQUEST_HANDLER_PARAMETER
+--			-- Parameter's object for `n'.	
+--		require
+--			n_not_empty: n /= Void and then not n.is_empty
+--		local
+--			params: like parameters
+--		do
+--			from
+--				params := parameters
+--				params.start
+--			until
+--				Result /= Void or params.after
+--			loop
+--				Result := params.item
+--				if not n.same_string (Result.name) then
+--					Result := Void
+--					params.forth
+--				end
+--			end
+--		ensure
+--			result_valid: Result /= Void implies n.same_string (Result.name)
+--		end
 
-	parameter_value (n: STRING; henv: REST_ENVIRONMENT): detachable STRING_32
+	parameter_value (p: REST_REQUEST_HANDLER_PARAMETER; ctx: REST_REQUEST_CONTEXT): detachable STRING_32
 			-- Parameter's value for `n'.
 		do
-			if method_get_supported then
-				Result := henv.variables_get.variable (n)
-			end
-			if Result = Void and method_post_supported then
-				Result := henv.variables_post.variable (n)
+			if attached {REST_REQUEST_HANDLER_URI_PARAMETER} p as p_uri then
+				-- ...
+			else
+				if method_get_supported then
+					Result := ctx.variables_get.variable (p.name)
+				end
+				if Result = Void and method_post_supported then
+					Result := ctx.variables_post.variable (p.name)
+				end
 			end
 		end
+
+--	uri_parameter (n: STRING): detachable REST_REQUEST_HANDLER_URI_PARAMETER
+--			-- Parameter's object for `n'.	
+--		require
+--			n_not_empty: n /= Void and then not n.is_empty
+--		local
+--			params: like uri_parameters
+--		do
+--			from
+--				params := uri_parameters
+--				params.start
+--			until
+--				Result /= Void or params.after
+--			loop
+--				Result := params.item
+--				if not n.same_string (Result.name) then
+--					Result := Void
+--					params.forth
+--				end
+--			end
+--		ensure
+--			result_valid: Result /= Void implies n.same_string (Result.name)
+--		end
 
 feature -- Analyze: parameters
 
-	analyze_parameters (results: HASH_TABLE [STRING_32, STRING]; missings: LIST [STRING]; henv: REST_ENVIRONMENT)
-			-- Analyze parameters from `henv', and return in `results' the table of known parameters
+	analyze_parameters (results: HASH_TABLE [STRING_32, STRING]; missings: LIST [STRING]; ctx: REST_REQUEST_CONTEXT)
+			-- Analyze parameters from `ctx', and return in `results' the table of known parameters
 			-- return in `missings' the required parameters which are missing if any
 		require
 			results_attached: results /= Void
 			missing_attached: missings /= Void
 		local
 			params: like parameters
-			param: like parameter
+			param: like parameters.item
+			n: STRING
 		do
+				--| GET,POST,.. parameters
 			from
 				params := parameters
 				params.start
@@ -316,10 +387,28 @@ feature -- Analyze: parameters
 				params.after
 			loop
 				param := params.item
-				if attached parameter_value (param.name, henv) as v then
-					results.put (v, param.name)
+				n := param.name
+				if attached parameter_value (param, ctx) as v then
+					results.put (v, n)
 				elseif not param.optional then
-					missings.force (param.name)
+					missings.force (n)
+				end
+				params.forth
+			end
+
+				--| URI parameters
+			from
+				params := uri_parameters
+				params.start
+			until
+				params.after
+			loop
+				param := params.item
+				n := param.name
+				if attached parameter_value (param, ctx) as v then
+					results.put (v, n)
+				elseif not param.optional then
+					missings.force (n)
 				end
 				params.forth
 			end
@@ -443,9 +532,34 @@ feature -- Status report
 
 feature -- Element change: parameters
 
+	add_uri_parameter (n: STRING; d: detachable STRING; opt: BOOLEAN; a_type: detachable STRING)
+		local
+			p: like uri_parameters.item
+		do
+			create p.make (n, opt)
+			p.description := d
+			p.type := a_type
+			uri_parameters.extend (p)
+		end
+
+	add_boolean_uri_parameter (n: STRING; d: detachable STRING; opt: BOOLEAN)
+		do
+			add_uri_parameter (n, d, opt, "boolean")
+		end
+
+	add_integer_uri_parameter (n: STRING; d: detachable STRING; opt: BOOLEAN)
+		do
+			add_uri_parameter (n, d, opt, "integer")
+		end
+
+	add_string_uri_parameter (n: STRING; d: detachable STRING; opt: BOOLEAN)
+		do
+			add_uri_parameter (n, d, opt, "string")
+		end
+
 	add_parameter (n: STRING; d: detachable STRING; opt: BOOLEAN; a_type: detachable STRING)
 		local
-			p: like parameter
+			p: like parameters.item
 		do
 			create p.make (n, opt)
 			p.description := d

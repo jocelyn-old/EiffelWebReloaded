@@ -1,13 +1,13 @@
 note
-	description: "Summary description for {REST_ENVIRONMENT}."
+	description: "Summary description for {REST_REQUEST_CONTEXT}."
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	REST_ENVIRONMENT
+	REST_REQUEST_CONTEXT
 
 inherit
-	HTTPD_ENVIRONMENT
+	HTTPD_REQUEST_CONTEXT
 		redefine
 			analyze
 		end

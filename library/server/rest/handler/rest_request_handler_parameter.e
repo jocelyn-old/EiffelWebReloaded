@@ -20,12 +20,23 @@ feature {NONE} -- Initialization
 feature -- Access
 
 	name: STRING
+			-- Parameter's name
+			--| either field's name for GET,POST, ... variables
+			--| or parameters in URI such as foo/{foo}
 
 	optional: BOOLEAN
+			-- Optional parameters
+
+	value_name: detachable STRING
+			-- Parameter's value name/description
+			--| either field's name for GET,POST, ... variables
+			--| or parameters in URI such as foo/{foo}
 
 	description: detachable STRING assign set_description
+			-- Description of Current parameters
 
 	type: detachable STRING assign set_type
+			-- Expected type of value
 
 feature -- Element change
 

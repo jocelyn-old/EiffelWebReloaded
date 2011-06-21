@@ -15,8 +15,8 @@ inherit
 
 feature {NONE} -- Implementation
 
-	internal_api_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS; a_require_credentials: BOOLEAN; a_http_post: BOOLEAN): STRING
-			-- REST API call for `a_api_url' with `a_require_credentials' and `a_http_post'
+	internal_api_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS; a_require_credentials: BOOLEAN; a_http_method: INTEGER): STRING
+			-- REST API call for `a_api_url' with `a_require_credentials' and `a_http_method'
 		local
 			l_result: INTEGER
 			l_curl_string: CURL_STRING
@@ -53,26 +53,33 @@ feature {NONE} -- Implementation
 				end
 			end
 
-			if a_http_post then
+			inspect a_http_method
+			when method_post then
 				curl_easy.setopt_integer (curl_handle, {CURL_OPT_CONSTANTS}.curlopt_post, 1)
-				if params /= Void then
-					if attached params.parameters_post as l_posts then
+			when method_put then
+				curl_easy.setopt_integer (curl_handle, {CURL_OPT_CONSTANTS}.curlopt_put, 1)
+			when method_delete then
+				curl_easy.setopt_string (curl_handle, {CURL_OPT_CONSTANTS}.curlopt_customrequest, "DELETE")
+			else
+				-- when method_get then				
+			end
+			if params /= Void then
+				if attached params.parameters_post as l_posts and then not l_posts.is_empty then
 --						curl_easy.set_debug_function (curl_handle)
 --						curl_easy.setopt_integer (curl_handle, {CURL_OPT_CONSTANTS}.curlopt_verbose, 1)
 
-						create l_form.make
-						create l_last.make
-						from
-							l_posts.start
-						until
-							l_posts.after
-						loop
-							curl.formadd_string_string (l_form, l_last, {CURL_FORM_CONSTANTS}.CURLFORM_COPYNAME, l_posts.key_for_iteration, {CURL_FORM_CONSTANTS}.CURLFORM_COPYCONTENTS, l_posts.item_for_iteration, {CURL_FORM_CONSTANTS}.CURLFORM_END)
-							l_posts.forth
-						end
-						l_last.release_item
-						curl_easy.setopt_form (curl_handle, {CURL_OPT_CONSTANTS}.curlopt_httppost, l_form)
+					create l_form.make
+					create l_last.make
+					from
+						l_posts.start
+					until
+						l_posts.after
+					loop
+						curl.formadd_string_string (l_form, l_last, {CURL_FORM_CONSTANTS}.CURLFORM_COPYNAME, l_posts.key_for_iteration, {CURL_FORM_CONSTANTS}.CURLFORM_COPYCONTENTS, l_posts.item_for_iteration, {CURL_FORM_CONSTANTS}.CURLFORM_END)
+						l_posts.forth
 					end
+					l_last.release_item
+					curl_easy.setopt_form (curl_handle, {CURL_OPT_CONSTANTS}.curlopt_httppost, l_form)
 				end
 			end
 

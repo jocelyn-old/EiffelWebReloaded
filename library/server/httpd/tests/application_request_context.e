@@ -1,14 +1,14 @@
 note
-	description: "Summary description for {APPLICATION_ENVIRONMENT}."
+	description: "Summary description for {APPLICATION_REQUEST_CONTEXT}."
 	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	APPLICATION_ENVIRONMENT
+	APPLICATION_REQUEST_CONTEXT
 
 inherit
-	HTTPD_ENVIRONMENT
+	HTTPD_REQUEST_CONTEXT
 		redefine
 			analyze,
 			initialize

@@ -1,14 +1,14 @@
 note
-	description: "Summary description for {REST_SERVER_ENVIRONMENT}."
+	description: "Summary description for {REST_SERVER_REQUEST_CONTEXT}."
 	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	REST_SERVER_ENVIRONMENT
+	REST_SERVER_REQUEST_CONTEXT
 
 inherit
-	REST_ENVIRONMENT
+	REST_REQUEST_CONTEXT
 		redefine
 			authentication,
 			validate_cookies,

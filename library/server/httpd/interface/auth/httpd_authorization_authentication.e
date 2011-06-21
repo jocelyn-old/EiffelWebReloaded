@@ -11,9 +11,9 @@ inherit
 
 feature 
 
-	validation (henv: HTTPD_ENVIRONMENT): detachable HTTPD_AUTHORIZATION_AUTHENTICATION_DATA
+	validation (ctx: HTTPD_REQUEST_CONTEXT): detachable HTTPD_AUTHORIZATION_AUTHENTICATION_DATA
 		do
-			if attached henv.http_authorization_login_password as t_u_p then
+			if attached ctx.http_authorization_login_password as t_u_p then
 				if is_valid_login_password (t_u_p.login, t_u_p.password) then
 					create Result.make (t_u_p.login)
 				end

@@ -38,13 +38,13 @@ feature -- Access
 
 feature -- Execution
 
-	hidden (henv: REST_ENVIRONMENT): BOOLEAN
+	hidden (ctx: REST_ENVIRONMENT): BOOLEAN
 			-- Do we hide this application in service publishing
 		do
-			Result := not henv.authenticated
+			Result := not ctx.authenticated
 		end
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			h: HTTPD_HEADER
 			s: detachable STRING
@@ -65,7 +65,7 @@ feature -- Execution
 						f.open_write
 						f.close
 						s.append_string (" wiped out%N")
-						h.put_redirection (url (henv, Void, False), {HTTP_STATUS_CODE}.temp_redirect)
+						h.put_redirection (url (ctx, Void, False), {HTTP_STATUS_CODE}.temp_redirect)
 					else
 						s.append_string (" no write access%N")
 					end
@@ -73,19 +73,19 @@ feature -- Execution
 					s.append_string (" not a file log%N")
 				end
 				h.put_content_length (s.count)
-				henv.output.put_string (h.string)
+				ctx.output.put_string (h.string)
 			else
 				if attached {FILE_LOGGER} sh_logger.logger as l_file_logger then
 					s.append_string ("%N-----------------------------------%N")
 					s.append_string (l_file_logger.name)
 					s.append_string ("-----------------------------------%N")
 					h.put_content_length (s.count + l_file_logger.log_size)
-					henv.output.put_string (h.string)
-					henv.output.put_file_content (l_file_logger.name)
+					ctx.output.put_string (h.string)
+					ctx.output.put_file_content (l_file_logger.name)
 				else
 					s.append_string ("none%N")
 					h.put_content_length (s.count)
-					henv.output.put_string (h.string)
+					ctx.output.put_string (h.string)
 				end
 			end
 

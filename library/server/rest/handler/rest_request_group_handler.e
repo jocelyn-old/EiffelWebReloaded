@@ -45,31 +45,29 @@ feature -- Addition
 
 feature -- Execution
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING_8; a_args: detachable STRING_8)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING_8; a_args: detachable STRING_8)
 			-- Execute request handler with `a_format' ad `a_args'
 		local
-			l_path_info: detachable STRING
 			rq: detachable REST_REQUEST_HANDLER
 		do
-			l_path_info := henv.path_info
-			rq := handlers.handler (l_path_info)
+			rq := handlers.handler (ctx)
 			if rq = Void then
-				rq := handlers.smart_handler (l_path_info)
+				rq := handlers.smart_handler (ctx)
 			end
 			if rq /= Void then
-				rq.execute (henv)
+				rq.execute (ctx)
 			else
-				execute_missing_application (henv, a_format, a_args)
+				execute_missing_application (ctx, a_format, a_args)
 			end
 		end
 
-	execute_missing_application (henv: REST_ENVIRONMENT; a_format: detachable STRING_8; a_args: detachable STRING_8)
+	execute_missing_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING_8; a_args: detachable STRING_8)
 		local
 			h: HTTPD_HEADER
 		do
 			create h.make
 			h.put_status ({HTTP_STATUS_CODE}.not_acceptable)
-			henv.output.put_string (h.string)
+			ctx.output.put_string (h.string)
 			h.recycle
 		end
 

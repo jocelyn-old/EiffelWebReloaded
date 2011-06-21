@@ -30,7 +30,7 @@ feature -- Registration
 
 feature -- Access
 
-	handler (a_path: STRING): detachable REST_REQUEST_HANDLER
+	handler_by_path (a_path: STRING): detachable REST_REQUEST_HANDLER
 		require
 			a_path_valid: a_path /= Void
 		local
@@ -50,9 +50,11 @@ feature -- Access
 				end
 			end
 			Result := handlers.item (l_path)
+		ensure
+			a_path_unchanged: a_path.same_string (old a_path)
 		end
 
-	smart_handler (a_path: STRING): detachable REST_REQUEST_HANDLER
+	smart_handler_by_path (a_path: STRING): detachable REST_REQUEST_HANDLER
 		require
 			a_path_valid: a_path /= Void
 		local
@@ -69,7 +71,7 @@ feature -- Access
 				until
 					p <= 1 or Result /= Void
 				loop
-					Result := handler (l_path.substring (1, p - 1))
+					Result := handler_by_path (l_path.substring (1, p - 1))
 					if Result = Void then
 						p := l_path.last_index_of ('/', p - 1)
 					end
@@ -77,6 +79,26 @@ feature -- Access
 					p
 				end
 			end
+		ensure
+			a_path_unchanged: a_path.same_string (old a_path)
+		end
+
+	handler (ctx: HTTPD_REQUEST_CONTEXT): detachable REST_REQUEST_HANDLER
+		require
+			ctx_valid: ctx /= Void and then ctx.path_info /= Void
+		do
+			Result := handler_by_path (ctx.path_info)
+		ensure
+			ctx_path_info_unchanged: ctx.path_info.same_string (old ctx.path_info)
+		end
+
+	smart_handler (ctx: HTTPD_REQUEST_CONTEXT): detachable REST_REQUEST_HANDLER
+		require
+			ctx_valid: ctx /= Void and then ctx.path_info /= Void
+		do
+			Result := smart_handler_by_path (ctx.path_info)
+		ensure
+			ctx_path_info_unchanged: ctx.path_info.same_string (old ctx.path_info)
 		end
 
 feature -- Access

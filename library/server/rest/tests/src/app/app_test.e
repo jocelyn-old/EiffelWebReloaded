@@ -37,7 +37,7 @@ feature -- Access
 
 feature -- Execution
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			rep: REST_RESPONSE
 			s: STRING
@@ -46,7 +46,7 @@ feature -- Execution
 			rep.headers.put_content_type_text_plain
 			create s.make_empty
 			s.append_string ("test")
-			if attached henv.environment_variable ("REQUEST_COUNT") as l_request_count then
+			if attached ctx.environment_variable ("REQUEST_COUNT") as l_request_count then
 				s.append_string ("(request_count="+ l_request_count +")%N")
 			end
 
@@ -56,22 +56,22 @@ feature -- Execution
 					(create {DEVELOPER_EXCEPTION}).raise
 				elseif a_args.starts_with ("env") then
 					s.append_string ("%N%NAll variables:")
-					s.append (string_hash_table_string_string (henv.variables.new_cursor))
-					s.append_string ("<br/>script_url(%"" + henv.path_info + "%")=" + henv.script_url (henv.path_info) + "%N")
-					if attached henv.http_authorization_login_password as t then
+					s.append (string_hash_table_string_string (ctx.variables.new_cursor))
+					s.append_string ("<br/>script_url(%"" + ctx.path_info + "%")=" + ctx.script_url (ctx.path_info) + "%N")
+					if attached ctx.http_authorization_login_password as t then
 						s.append_string ("Check login=" + t.login + "<br/>%N")
 					end
-					if henv.authenticated and then attached henv.authenticated_login as l_login then
+					if ctx.authenticated and then attached ctx.authenticated_login as l_login then
 						s.append_string ("Authenticated: login=" + l_login.as_string_8 + "<br/>%N")
 					end
 				end
 			else
-				s.append ("%N Try " + henv.script_absolute_url (henv.path_info + "/env") + " to display all variables%N")
-				s.append ("%N Try " + henv.script_absolute_url (henv.path_info + "/crash") + " to demonstrate exception trace%N")
+				s.append ("%N Try " + ctx.script_absolute_url (ctx.path_info + "/env") + " to display all variables%N")
+				s.append ("%N Try " + ctx.script_absolute_url (ctx.path_info + "/crash") + " to demonstrate exception trace%N")
 			end
 			rep.set_message (s)
 			rep.compute
-			henv.output.put_string (rep.string)
+			ctx.output.put_string (rep.string)
 			rep.recycle
 		end
 

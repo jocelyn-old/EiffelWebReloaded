@@ -40,27 +40,27 @@ feature -- Access
 
 feature -- Execution
 
-	execute_unauthorized (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_unauthorized (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			h: HTTPD_HEADER
 		do
 			create h.make
 			h.put_status ({HTTP_STATUS_CODE}.unauthorized)
 			h.put_header ("WWW-Authenticate: Basic realm=%"My Silly demo auth, password must be the same as login such as foo:foo%"")
-			henv.output.put_string (h.string)
+			ctx.output.put_string (h.string)
 			h.recycle
 		end
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
 		local
 			l_full: BOOLEAN
 			rep: detachable REST_RESPONSE
 			l_login: STRING_8
 			s: STRING
 		do
-			if henv.authenticated then
-				l_full := attached henv.variables_get.variable ("details") as v and then v.is_case_insensitive_equal ("true")
-				if attached henv.authenticated_login as log then
+			if ctx.authenticated then
+				l_full := attached ctx.variables_get.variable ("details") as v and then v.is_case_insensitive_equal ("true")
+				if attached ctx.authenticated_login as log then
 					l_login := log.as_string_8
 					create rep.make (path)
 
@@ -79,14 +79,14 @@ feature -- Execution
 					end
 					if not s.is_empty then
 						rep.set_message (s)
-						henv.output.put_string (rep.string)
+						ctx.output.put_string (rep.string)
 					end
 					rep.recycle
 				else
-					process_error (henv, "User/password unknown", a_format)
+					process_error (ctx, "User/password unknown", a_format)
 				end
 			else
-				process_error (henv, "Authentication rejected", a_format)
+				process_error (ctx, "Authentication rejected", a_format)
 			end
 		end
 

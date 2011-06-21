@@ -1,18 +1,16 @@
 note
-	description: "Summary description for HTTPD_ENVIRONMENT."
+	description: "Summary description for {REST_REQUEST_HANDLER_URI_PARAMETER}."
 	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	HTTPD_ENVIRONMENT
-
-obsolete "use HTTPD_REQUEST_CONTEXT , this class will be removed by [2011-july]"
+	REST_REQUEST_HANDLER_URI_PARAMETER
 
 inherit
-	HTTPD_REQUEST_CONTEXT
+	REST_REQUEST_HANDLER_PARAMETER
 
-create {HTTPD_APPLICATION}
+create
 	make
 
 note

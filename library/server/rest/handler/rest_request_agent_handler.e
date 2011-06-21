@@ -24,7 +24,7 @@ feature -- Initialization
 
 feature -- Access
 
-	action: PROCEDURE [ANY, TUPLE [env: REST_ENVIRONMENT; format: detachable STRING; args: detachable STRING]]
+	action: PROCEDURE [ANY, TUPLE [env: REST_REQUEST_CONTEXT; format: detachable STRING; args: detachable STRING]]
 
 	authentication_required: BOOLEAN assign set_authentication_required
 
@@ -37,9 +37,9 @@ feature -- Element change
 
 feature -- Execution
 
-	execute_application (henv: REST_ENVIRONMENT; a_format: detachable STRING; a_args: detachable STRING)
+	execute_application (ctx: REST_REQUEST_CONTEXT; a_format: detachable STRING; a_args: detachable STRING)
 		do
-			action.call ([henv, a_format, a_args])
+			action.call ([ctx, a_format, a_args])
 		end
 
 note

@@ -10,7 +10,7 @@ deferred class
 inherit
 	HTTPD_APPLICATION
 		redefine
-			new_environment
+			new_request_context
 		end
 
 feature {NONE} -- Handlers
@@ -21,7 +21,7 @@ feature {NONE} -- Handlers
 
 feature {NONE} -- Environment
 
-	new_environment (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_ENVIRONMENT
+	new_request_context (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_REQUEST_CONTEXT
 		do
 			create Result.make (a_vars, a_input, a_output)
 			Result.environment_variables.add_variable (request_count.out, "REQUEST_COUNT")
@@ -29,25 +29,23 @@ feature {NONE} -- Environment
 
 feature -- Execution
 
-	execute (henv: like new_environment)
+	execute (ctx: like new_request_context)
 		local
-			l_path_info: detachable STRING
 			rescued: INTEGER
 			rq: detachable REST_REQUEST_HANDLER
 		do
 			if rescued = 0 then
-				l_path_info := henv.path_info
-				rq := handler_manager.handler (l_path_info)
+				rq := handler_manager.handler (ctx)
 				if rq = Void then
-					rq := handler_manager.smart_handler (l_path_info)
+					rq := handler_manager.smart_handler (ctx)
 				end
 				if rq /= Void then
-					rq.execute (henv)
+					rq.execute (ctx)
 				else
-					execute_default (henv)
+					execute_default (ctx)
 				end
 			elseif rescued = 1 then
-				execute_rescue (henv)
+				execute_rescue (ctx)
 			else
 				-- Bye Bye
 				exit_with_code (-1)
@@ -57,12 +55,12 @@ feature -- Execution
 			retry
 		end
 
-	execute_default (henv: like new_environment)
+	execute_default (ctx: like new_request_context)
 			-- Execute the default behavior
 		deferred
 		end
 
-	execute_rescue (henv: like new_environment)
+	execute_rescue (ctx: like new_request_context)
 			-- Execute the default rescue behavior
 		deferred
 		end

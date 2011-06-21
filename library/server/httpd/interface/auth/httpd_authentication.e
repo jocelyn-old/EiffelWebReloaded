@@ -8,7 +8,7 @@ deferred class
 
 feature -- Access
 
-	validation (henv: HTTPD_ENVIRONMENT): detachable HTTPD_AUTHENTICATION_DATA
+	validation (ctx: HTTPD_REQUEST_CONTEXT): detachable HTTPD_AUTHENTICATION_DATA
 		deferred
 		end
 	
