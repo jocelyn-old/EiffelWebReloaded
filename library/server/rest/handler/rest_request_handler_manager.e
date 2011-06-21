@@ -35,7 +35,6 @@ feature -- Access
 			-- i.e: not empty, starting with '/'
 		local
 			p: INTEGER
-			l_path: STRING
 		do
 			Result := a_path
 			if Result.is_empty then
