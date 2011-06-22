@@ -14,7 +14,7 @@
 		<setting name="concurrency" value="thread"/>
 		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
 		<library name="httpd" location="..\..\library\server\httpd\httpd.ecf" readonly="false"/>
-		<library name="httpd_nino" location="..\..\library\server\httpd_support\nino\httpd_nino.ecf" readonly="false"/>
+		<library name="httpd_nino" location="..\..\library\server\httpd_connector\nino\httpd_nino.ecf" readonly="false"/>
 		<library name="json" location="..\..\library\text\json\library\json-safe.ecf" readonly="false"/>
 		<library name="logger" location="..\..\library\logger\logger.ecf" readonly="false"/>
 		<library name="rest" location="..\..\library\server\rest\rest.ecf" readonly="false"/>

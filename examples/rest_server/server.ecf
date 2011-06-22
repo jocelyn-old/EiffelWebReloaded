@@ -16,7 +16,7 @@
 		<library name="logger" location="..\..\library\logger\logger.ecf" readonly="false"/>
 		<library name="rest" location="..\..\library\server\rest\rest.ecf" readonly="false"/>
 		<library name="httpd" location="..\..\library\server\httpd\httpd.ecf" readonly="false"/>
-		<library name="httpd_nino" location="..\..\library\server\httpd_support\nino\httpd_nino.ecf" readonly="false"/>
+		<library name="httpd_nino" location="..\..\library\server\httpd_connector\nino\httpd_nino.ecf" readonly="false"/>
 		<cluster name="src" location=".\src\"/>
 		<cluster name="app" location=".\src\app\" recursive="true"/>
 	</target>
