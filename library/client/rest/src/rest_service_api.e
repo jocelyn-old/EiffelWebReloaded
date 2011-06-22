@@ -26,11 +26,18 @@ feature -- Access
 feature -- Access
 
 	http_status: INTEGER
-		--	/* Contains the last HTTP status code returned */
+			--	/* Contains the last HTTP status code returned */
 
 	last_api_call: detachable STRING
-		--	/* Contains the last API call */
+			--	/* Contains the last API call */
 
+feature -- Factory
+
+	new_api_parameters (a_get_capacity, a_post_capacity: INTEGER): REST_SERVICE_API_PARAMETERS
+			-- New REST_SERVICE_API_PARAMETERS for `a_get_capacity, a_post_capacity'
+		do
+			create Result.make (a_get_capacity, a_post_capacity)
+		end
 
 feature -- status report
 

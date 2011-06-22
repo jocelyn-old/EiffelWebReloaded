@@ -74,14 +74,12 @@ feature {NONE} -- Environment
 
 	new_request_context (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): REST_REQUEST_CONTEXT
 		do
-			create Result.make (a_vars, a_input, a_output)
-			
+				--| Precise our own authentication system
+			create Result.make_with_authentication (a_vars, a_input, a_output, create {REST_SERVER_AUTHENTICATION})
+
 				--| At this point, you can decided to add your own environment variable
 				--| this is a convenient way to share a value
 			Result.environment_variables.add_variable (request_count.out, "REQUEST_COUNT")
-
-				--| Precise our own authentication system
-			Result.authentication := create {REST_SERVER_AUTHENTICATION}
 
 				--| Note that you can also create your own REST_REQUEST_CONTEXT with specific features
 		end

@@ -60,7 +60,7 @@ feature -- Execution
 		do
 			if ctx.authenticated then
 				l_full := attached ctx.variables_get.variable ("details") as v and then v.is_case_insensitive_equal ("true")
-				if attached ctx.authenticated_login as log then
+				if attached ctx.authenticated_identifier as log then
 					l_login := log.as_string_8
 					create rep.make (path)
 

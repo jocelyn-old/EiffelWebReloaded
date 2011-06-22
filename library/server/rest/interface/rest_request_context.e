@@ -10,7 +10,8 @@ inherit
 	HTTPD_REQUEST_CONTEXT
 
 create {HTTPD_APPLICATION}
-	make
+	make,
+	make_with_authentication
 
 feature -- Format
 

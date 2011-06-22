@@ -7,16 +7,16 @@ note
 class
 	REST_SERVICE_API_PARAMETERS
 
-create
+create {REST_SERVICE_API}
 	make
 
 feature {NONE} -- Initialization
 
-	make (n,m: INTEGER)
-			-- Initialize for `n' GET params, and `m' POST params
+	make (a_get_capacity, a_post_capacity: INTEGER)
+			-- Initialize for `a_get_capacity' GET params, and `a_post_capacity' POST params
 		do
-			create parameters_get.make (n)
-			create parameters_post.make (m)
+			create parameters_get.make (a_get_capacity)
+			create parameters_post.make (a_post_capacity)
 		end
 
 feature -- Status report

@@ -37,7 +37,7 @@ feature -- Basic operation
 				attached l_cookies.item ("user") as l_user
 			then
 				authenticated := l_auth.value_is_string ("yes")
-				authenticated_login := l_user.value
+				authenticated_identifier := l_user.value
 			end
 		end
 

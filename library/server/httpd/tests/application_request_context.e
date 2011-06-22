@@ -10,37 +10,17 @@ class
 inherit
 	HTTPD_REQUEST_CONTEXT
 		redefine
-			analyze,
-			initialize
+			validate_cookies,
+			validate_authentication
 		end
 
 create {HTTPD_APPLICATION}
 	make
 
-feature {NONE} -- Initialize
-
-	initialize
-		do
-			create authenticated_login.make_empty
-			Precursor
-		end
 
 feature -- Basic operation
 
-	analyze
-			-- Analyze environment, and set various attributes
-		do
-			Precursor
-			if not has_error then
-				validate_cookies
-				if not authenticated then
-					validate_http_authorization
-				end
-			end
-		end
-
 	validate_cookies
-		local
 		do
 			if
 				attached cookies as l_cookies and then
@@ -49,25 +29,19 @@ feature -- Basic operation
 				attached l_cookies.item ("user") as l_user
 			then
 				authenticated := l_auth.value_is_string ("yes")
-				authenticated_login := l_user.value
+				authenticated_identifier := l_user.value
 			end
 		end
 
-	validate_http_authorization
+	validate_authentication
 		do
 			if attached http_authorization_login_password as l_login_password then
 				authenticated := l_login_password.login.same_string ("abc") and
 								 l_login_password.password.same_string ("def")
 				if authenticated then
-					authenticated_login := l_login_password.login
+					authenticated_identifier := l_login_password.login
 				end
 			end
 		end
-
-feature -- Authentication
-
-	authenticated: BOOLEAN
-
-	authenticated_login: STRING
 
 end

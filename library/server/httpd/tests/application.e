@@ -53,8 +53,8 @@ feature -- Execution
 					+ "<a href=%"" + ctx.script_url ("/home") + "%">Home</a> "
 					+ "<a href=%"" + ctx.script_url ("/help") + "%">Help</a> "
 					+ "<a href=%"" + ctx.script_url ("/test")  + "%">Test</a> "
-			if ctx.authenticated then
-				Result.append ("<a href=%"" + ctx.script_url ("/private") + "%">"+ ctx.authenticated_login + "</a> ")
+			if ctx.authenticated and then attached ctx.authenticated_identifier as l_id then
+				Result.append ("<a href=%"" + ctx.script_url ("/private") + "%">"+ l_id + "</a> ")
 
 				Result.append ("<a href=%"" + ctx.script_url ("/logout") + "%">Logout</a> ")
 			else
@@ -133,24 +133,24 @@ feature -- Execution
 			h: APPLICATION_HTML_PAGE
 			s: STRING
 		do
-			if not ctx.authenticated then
+			if ctx.authenticated and then attached ctx.authenticated_identifier as l_id then
+				create h.make ("Login ...")
+				h.headers.put_content_type_text_html
+				h.headers.put_redirection (ctx.script_url ("/home"), 0)
+				h.headers.put_cookie ("uuid", "uuid_" + l_id, Void, Void, Void, Void)
+				h.headers.put_cookie ("auth", "yes", Void, Void, Void, Void)
+				h.headers.put_cookie ("user", l_id, Void, Void, Void, Void)
+				h.body_menu := html_menu (ctx)
+				h.body_main.append ("Hello " + l_id + "%N")
+				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (ctx.cookies_variables.new_cursor))
+				http_put_string (h.string, ctx)
+				h.recycle
+			else
 				create hd.make
 				hd.put_status (401)
 				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
 				http_put_string (hd.string, ctx)
 				hd.recycle
-			else
-				create h.make ("Login ...")
-				h.headers.put_content_type_text_html
-				h.headers.put_redirection (ctx.script_url ("/home"), 0)
-				h.headers.put_cookie ("uuid", "uuid_" + ctx.authenticated_login, Void, Void, Void, Void)
-				h.headers.put_cookie ("auth", "yes", Void, Void, Void, Void)
-				h.headers.put_cookie ("user", ctx.authenticated_login, Void, Void, Void, Void)
-				h.body_menu := html_menu (ctx)
-				h.body_main.append ("Hello " + ctx.authenticated_login + "%N")
-				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (ctx.cookies_variables.new_cursor))
-				http_put_string (h.string, ctx)
-				h.recycle
 			end
 		end
 
@@ -159,7 +159,18 @@ feature -- Execution
 			hd: HTTPD_HEADER
 			h: APPLICATION_HTML_PAGE
 		do
-			if ctx.authenticated then
+			if ctx.authenticated and then attached ctx.authenticated_identifier as l_id then
+				create h.make ("Logout ...")
+				h.headers.put_content_type_text_html
+				h.headers.put_cookie ("uuid", "", Void, Void, Void, Void)
+				h.headers.put_cookie ("auth", "lno", Void, Void, Void, Void)
+				h.headers.put_cookie ("user", "", Void, Void, Void, Void)
+				h.body_menu := html_menu (ctx)
+				h.body_main.append ("Bye " + l_id + "%N")
+				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (ctx.cookies_variables.new_cursor))
+				http_put_string (h.string, ctx)
+				h.recycle
+			else
 				create hd.make
 				hd.put_status (401)
 				hd.put_header ("WWW-Authenticate: Basic realm=%"Eiffel Auth%"")
@@ -168,17 +179,6 @@ feature -- Execution
 				hd.put_cookie ("user", "", Void, Void, Void, Void)
 				http_put_string (hd.string, ctx)
 				hd.recycle
-			else
-				create h.make ("Logout ...")
-				h.headers.put_content_type_text_html
-				h.headers.put_cookie ("uuid", "", Void, Void, Void, Void)
-				h.headers.put_cookie ("auth", "lno", Void, Void, Void, Void)
-				h.headers.put_cookie ("user", "", Void, Void, Void, Void)
-				h.body_menu := html_menu (ctx)
-				h.body_main.append ("Bye " + ctx.authenticated_login + "%N")
-				h.body_main.append ("Cookies:%N" + string_hash_table_string_string (ctx.cookies_variables.new_cursor))
-				http_put_string (h.string, ctx)
-				h.recycle
 			end
 		end
 

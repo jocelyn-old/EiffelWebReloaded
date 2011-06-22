@@ -13,13 +13,13 @@ feature -- Access
 		deferred
 		end
 
-	identifier: STRING_GENERAL
+	identifier: STRING_32
 			-- Identifier
 		deferred
 		end
 
 invariant
-	authenticated implies identifier /= Void
+	authenticated implies identifier.count > 0
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"

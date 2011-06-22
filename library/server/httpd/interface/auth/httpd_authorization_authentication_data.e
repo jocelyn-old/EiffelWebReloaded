@@ -15,7 +15,7 @@ create
 
 feature {NONE} -- Initialization
 
-	make (u: STRING_GENERAL)
+	make (u: STRING_32)
 		do
 			identifier := u
 		end
@@ -24,12 +24,9 @@ feature -- Access
 
 	authenticated: BOOLEAN = True
 
-	identifier: STRING_GENERAL
+	identifier: STRING_32
 
-invariant
-	identifier_attached: identifier /= Void
-
-note
+;note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 	source: "[

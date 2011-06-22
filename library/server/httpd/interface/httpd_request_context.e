@@ -16,7 +16,8 @@ class
 	HTTPD_REQUEST_CONTEXT
 
 create {HTTPD_APPLICATION}
-	make
+	make,
+	make_with_authentication
 
 feature {NONE} -- Initialization
 
@@ -36,8 +37,18 @@ feature {NONE} -- Initialization
 			create error_handler.make
 
 			raw_post_data_recorded := True
+
 			initialize
 			analyze
+		end
+
+	make_with_authentication (a_vars: HASH_TABLE [STRING, STRING];
+				a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT;
+				a_auth: like authentication)
+			-- Initialize Current with variable `a_vars' and `a_input'	and `a_auth'
+		do
+			authentication := a_auth
+			make (a_vars, a_input, a_output)
 		end
 
 	initialize
@@ -107,9 +118,15 @@ feature -- Recycle
 					l_files.forth
 				end
 			end
+			reset_authentication_data
+			error_handler.reset
+		end
+
+	reset_authentication_data
+			-- Reset authentication data
+		do
 			authenticated := False
 			authenticated_identifier := Void
-			error_handler.reset
 		end
 
 feature -- Basic operation
@@ -142,8 +159,7 @@ feature -- Basic operation
 					authenticated := True
 					authenticated_identifier := auth_data.identifier
 				else
-					authenticated := False
-					authenticated_identifier := Void
+					reset_authentication_data
 				end
 			end
 		end
@@ -151,19 +167,16 @@ feature -- Basic operation
 feature -- Authentication report
 
 	authenticated: BOOLEAN
+			-- Is request authenticated?
 
-	authenticated_identifier: detachable STRING_GENERAL
+	authenticated_identifier: detachable STRING_32
+			-- If `authenticated' return the associated authenticated identifier
+			-- otherwise it is Void
 
 feature -- Authentication
 
-	authentication: detachable HTTPD_AUTHENTICATION assign set_authentication
-		-- Optional authentication system	
-
-	set_authentication (auth: like authentication)
-			-- Set `authentication' to `auth'
-		do
-			authentication := auth
-		end
+	authentication: detachable HTTPD_AUTHENTICATION
+			-- Optional authentication system	
 
 feature -- Access: global variable
 
@@ -405,11 +418,11 @@ feature -- Authorization
 	http_authorization: detachable STRING
 			-- Base64-encoded authorization info
 
-	http_authorization_login_password: detachable TUPLE [login: STRING; password: STRING]
+	http_authorization_login_password: detachable TUPLE [login: STRING_32; password: STRING_32]
 			-- Login/password extracted from http_authorization
 		local
 			p: INTEGER
-			s: detachable STRING
+			s: detachable STRING_8
 		do
 			s := http_authorization
 			if s /= Void and then not s.is_empty then
@@ -422,7 +435,7 @@ feature -- Authorization
 					s := (create {BASE64}).decoded_string (s.substring (p + 1, s.count))
 					p := s.index_of (':', 1) --| Let's assume ':' is forbidden in login ...
 					if p > 0 then
-						Result := [s.substring (1, p - 1), s.substring (p + 1, s.count)]
+						Result := [s.substring (1, p - 1).as_string_32, s.substring (p + 1, s.count).as_string_32]
 					end
 				end
 			end
@@ -1101,7 +1114,6 @@ invariant
 	content_type_attached: content_type /= Void
 
 	valid_identifier_if_authenticated: authenticated implies (attached authenticated_identifier as l_id and then not l_id.is_empty)
-		
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
