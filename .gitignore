@@ -2,3 +2,4 @@ EIFGENs/
 *.swp
 *.svn
 existing/
+tests/temp
