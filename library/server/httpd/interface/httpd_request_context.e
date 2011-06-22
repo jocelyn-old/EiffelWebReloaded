@@ -107,14 +107,62 @@ feature -- Recycle
 					l_files.forth
 				end
 			end
+			authenticated := False
+			authenticated_identifier := Void
+			error_handler.reset
 		end
 
 feature -- Basic operation
 
 	analyze
-			-- Analyze environment, and set various attributes
+			-- Analyze context, set various attributes and validate values
 		do
 			extract_variables
+			if not has_error then
+				validate_cookies
+				if not authenticated then
+					validate_authentication
+				end
+			end
+		end
+
+	validate_cookies
+			-- Validate cookies and extract information from them if available
+		do
+		end
+
+	validate_authentication
+			-- Validate authentication
+		do
+			if
+				attached authentication as auth and then
+				attached auth.validation (Current) as auth_data
+			then
+				if auth_data.authenticated then
+					authenticated := True
+					authenticated_identifier := auth_data.identifier
+				else
+					authenticated := False
+					authenticated_identifier := Void
+				end
+			end
+		end
+
+feature -- Authentication report
+
+	authenticated: BOOLEAN
+
+	authenticated_identifier: detachable STRING_GENERAL
+
+feature -- Authentication
+
+	authentication: detachable HTTPD_AUTHENTICATION assign set_authentication
+		-- Optional authentication system	
+
+	set_authentication (auth: like authentication)
+			-- Set `authentication' to `auth'
+		do
+			authentication := auth
 		end
 
 feature -- Access: global variable
@@ -1051,6 +1099,9 @@ invariant
 	request_method_attached: request_method /= Void
 	path_info_attached: path_info /= Void
 	content_type_attached: content_type /= Void
+
+	valid_identifier_if_authenticated: authenticated implies (attached authenticated_identifier as l_id and then not l_id.is_empty)
+		
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"

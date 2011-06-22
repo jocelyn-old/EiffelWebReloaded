@@ -30,11 +30,13 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	request_count: INTEGER
-
 	base: detachable STRING
 		deferred
 		end
+
+feature {NONE} -- Context
+
+	request_count: INTEGER
 
 feature -- Basic operation
 

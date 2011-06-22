@@ -8,12 +8,6 @@ note
 deferred class
 	HTTPD_APPLICATION
 
-feature -- Access
-
-	request_count: INTEGER
-		deferred
-		end
-
 feature -- Basic operation
 
 	launch
@@ -68,7 +62,12 @@ feature -- Execution
 		deferred
 		end
 
-feature {NONE} -- Environment
+feature {NONE} -- Context
+
+	request_count: INTEGER
+			-- Current request count
+		deferred
+		end
 
 	new_request_context (a_vars: HASH_TABLE [STRING, STRING]; a_input: HTTPD_SERVER_INPUT; a_output: HTTPD_SERVER_OUTPUT): HTTPD_REQUEST_CONTEXT
 			-- New httpd environment based on `a_vars' and `input'
@@ -79,7 +78,7 @@ feature {NONE} -- Environment
 			create Result.make (a_vars, a_input, a_output)
 		end
 
-feature -- Output
+feature -- Output: helpers
 
 	http_put_exception_trace (ctx: like new_request_context)
 			-- Print exception trace is any

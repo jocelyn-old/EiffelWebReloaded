@@ -20,10 +20,6 @@ feature {NONE} -- Initialization
 			create {HTTPD_FCGI_SERVER_OUTPUT} output.make (fcgi)
 		end
 
-feature -- Access
-
-	request_count: INTEGER
-
 feature -- Basic operation
 
 	launch
@@ -41,6 +37,10 @@ feature -- Basic operation
 				res := fcgi.fcgi_listen
 			end
 		end
+
+feature {NONE} -- Context
+
+	request_count: INTEGER
 
 feature -- Input/Output
 

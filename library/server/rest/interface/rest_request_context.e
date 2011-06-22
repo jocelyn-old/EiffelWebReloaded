@@ -8,66 +8,31 @@ class
 
 inherit
 	HTTPD_REQUEST_CONTEXT
-		redefine
-			analyze
-		end
 
 create {HTTPD_APPLICATION}
 	make
 
-feature -- Basic operation
+feature -- Format
 
-	analyze
-			-- Analyze environment, and set various attributes
+	request_format: detachable STRING
+			-- Request format based on `Content-Type'.
+		local
+			s: STRING
 		do
-			Precursor
-			if not has_error then
-				validate_cookies
-				if not authenticated then
-					validate_http_authorization
-				end
+			s := content_type
+			if s.same_string ({HTTP_CONSTANTS}.json_text) then
+				Result := {REST_FORMAT_CONSTANTS}.json_name
+			elseif s.same_string ({HTTP_CONSTANTS}.json_app) then
+				Result := {REST_FORMAT_CONSTANTS}.json_name
+			elseif s.same_string ({HTTP_CONSTANTS}.xml_text) then
+				Result := {REST_FORMAT_CONSTANTS}.xml_name
+			elseif s.same_string ({HTTP_CONSTANTS}.html_text) then
+				Result := {REST_FORMAT_CONSTANTS}.html_name
+			elseif s.same_string ({HTTP_CONSTANTS}.plain_text) then
+				Result := {REST_FORMAT_CONSTANTS}.text_name
 			end
 		end
 
-	validate_cookies
-		do
-		end
-
-	validate_http_authorization
-		do
-			if
-				attached authentication as auth and then
-				attached auth.validation (Current) as auth_data
-			then
-				if auth_data.authenticated then
-					authenticated := True
-					authenticated_login := auth_data.identifier
-				else
-					authenticated := False
-					authenticated_login := Void
-				end
-			end
-		end
-
-feature -- Authentication
-
-	authentication: detachable HTTPD_AUTHENTICATION assign set_authentication
-		-- Optional authentication system	
-
-	set_authentication (auth: like authentication)
-			-- Set `authentication' to `auth'
-		do
-			authentication := auth
-		end
-
-feature -- Authentication report
-
-	authenticated: BOOLEAN
-
-	authenticated_login: detachable STRING_GENERAL
-
-invariant
-	valid_login_if_authenticated: authenticated implies (attached authenticated_login as l and then not l.is_empty)
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"

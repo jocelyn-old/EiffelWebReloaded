@@ -19,10 +19,6 @@ feature {NONE} -- Initialization
 			create {HTTPD_CGI_SERVER_OUTPUT} output.make
 		end
 
-feature -- Access
-
-	request_count: INTEGER
-
 feature -- Basic operation
 
 	launch
@@ -30,6 +26,10 @@ feature -- Basic operation
 			request_count := request_count + 1
 			call_execute ((create {EXECUTION_ENVIRONMENT}).starting_environment_variables, input, output)
 		end
+
+feature {NONE} -- Context
+
+	request_count: INTEGER
 
 feature -- Input/Output
 

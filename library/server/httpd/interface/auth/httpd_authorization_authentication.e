@@ -9,9 +9,10 @@ deferred class
 inherit
 	HTTPD_AUTHENTICATION
 
-feature 
+feature -- Status report
 
 	validation (ctx: HTTPD_REQUEST_CONTEXT): detachable HTTPD_AUTHORIZATION_AUTHENTICATION_DATA
+			-- Validate authentication based on `ctx' using the environment variable HTTP_AUTHORIZATION
 		do
 			if attached ctx.http_authorization_login_password as t_u_p then
 				if is_valid_login_password (t_u_p.login, t_u_p.password) then
@@ -21,6 +22,7 @@ feature
 		end
 
 	is_valid_login_password (u, p: STRING_8): BOOLEAN
+			-- Is `u:p' valid credential?
 		deferred
 		end
 	
