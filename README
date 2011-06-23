@@ -3,9 +3,10 @@ This project is to provide an easy way to build web application with Eiffel
 = Get the source code =
 See https://github.com/EiffelSoftware/EiffelWebReloaded/wiki/Getting-started
 
- git clone git://github.com/EiffelSoftware/EiffelWebReloaded.git
+ git clone http://github.com/EiffelSoftware/EiffelWebReloaded.git
  cd EiffelWebReloaded
  git submodule update --init
+ git submodule foreach git pull origin master
  git submodule foreach git checkout master
 
 
