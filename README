@@ -1,21 +1,19 @@
 This project is to provide an easy way to build web application with Eiffel
 
-= First step =
-* provide a FastCGI implementation, to make it easy to deploy Eiffel web application on any popular httpd server  (Apache, IIS, lightTPD, nginx)
-* build a web server framework:
-  -give access to the server's data via the environment variables (query, ip, platform, ..)
-  - but also to the request itself: cookies , get,post,delete,put type, and the related data
-  - The FCGI would be just an implementation. We can imagine later to have SCGI, or even a pure Eiffel httpd server, and why not a specific protocol between httpd server and Eiffel web application (similar to FCGI).
-  - This should also enable the developer to test the web application without requiring a real httpd server.
+= Get the source code =
+See https://github.com/EiffelSoftware/EiffelWebReloaded/wiki/Getting-started
 
-= Second step =
-* build a web application framework, with more "application" logic behind
-* provide a very easy way to publish API over REST server.
-* this could lead to a first CMS (framework) written in Eiffel to make it very easy to build web application with Eiffel
-* ask a few users from the community for feedback, and eventually specific contribution on existing code.
+ git clone git://github.com/EiffelSoftware/EiffelWebReloaded.git
+ cd EiffelWebReloaded
+ git submodule update --init
+ git submodule foreach git checkout master
 
-= Third step =
-* provide more communication functionalities, in order to integrate other services (twitter, xmpp, ... and any services we can think of). This could lead to nice mashup.
-* provide more components for authentication (openid, google connect, facebook connect, Oauth, ...), and any lib that could be useful (template engine, Wiki parser, diagram builder, and so on ...)
-* call for contribution from the community
 
+= Goals =
+Provide a framework to easily build web application with Eiffel, with the following requirements
+portable web server framework: this means, platform independant, and web server independant solution, and even protocol independant (support for fcgi, cgi, ...)
+up-to-date with Eiffel: standard syntax, and void-safety by default
+framework to help the user to build quickly a web application (RESTful service, CMS web interface, XML-RPC ...)
+be adopted by the Eiffel community, and let it grow with quality and rich set of features
+
+See https://github.com/EiffelSoftware/EiffelWebReloaded/wiki for details
