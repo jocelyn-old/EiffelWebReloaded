@@ -1,12 +1,12 @@
 [submodule "library/text/json"]
 	path = library/text/json
-	url = git://github.com/Eiffel-World/ejson-ise-svn.git
+	url = http://github.com/Eiffel-World/ejson-ise-svn.git
 [submodule "library/server/fcgi/libfcgi"]
 	path = library/server/fcgi/libfcgi
-	url = git://github.com/EiffelSoftware/libfcgi.git
+	url = http://github.com/EiffelSoftware/libfcgi.git
 [submodule "library/server/nino"]
 	path = library/server/nino
-	url = git://github.com/jocelyn/EiffelWebNino.git
+	url = http://github.com/Eiffel-World/EiffelWebNino.git
 [submodule "wiki"]
 	path = wiki
-	url = git@github.com:EiffelSoftware/EiffelWebReloaded.wiki.git
+	url = http://github.com/EiffelSoftware/EiffelWebReloaded.wiki.git
