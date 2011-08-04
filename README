@@ -1,3 +1,7 @@
+WARNING: we are redoing this project at another place, mainly new interface and naming, but still the same architecture principle. The goal is to centralize Eiffel resources. So please visit
+''' https://github.com/Eiffel-World/Eiffel-Web-Framework '''
+
+
 This project is to provide an easy way to build web application with Eiffel
 
 = Get the source code =
